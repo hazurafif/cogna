@@ -1,8 +1,12 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
+import { Screen } from "../components/Screen";
+import { colors } from "../theme/colors";
+import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
 
 function formatDay(startedAt: string): string {
@@ -31,11 +35,11 @@ export function HistoryScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <Screen title="History">
       <View style={styles.header}>
-        <Text style={styles.title}>History</Text>
-        <Pressable onPress={() => router.push("/session/new")}>
-          <Text style={styles.addLink}>+ Log manually</Text>
+        <Pressable onPress={() => router.push("/session/new")} style={styles.addLink}>
+          <Ionicons name="add-outline" size={16} color={colors.primary} />
+          <Text style={styles.addText}>Log manually</Text>
         </Pressable>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -44,7 +48,9 @@ export function HistoryScreen() {
         keyExtractor={(s) => String(s.id)}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => router.push(`/session/${item.id}`)}>
-            <View style={[styles.dot, { backgroundColor: item.subject_color }]} />
+            <View style={styles.iconChip}>
+              <Ionicons name="time-outline" size={18} color={item.subject_color} />
+            </View>
             <View style={styles.rowBody}>
               <Text style={styles.rowName}>{item.subject_name}</Text>
               <Text style={styles.rowMeta}>
@@ -55,23 +61,38 @@ export function HistoryScreen() {
           </Pressable>
         )}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 12 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "700" },
-  addLink: { color: "#4F46E5", fontWeight: "600" },
-  row: {
-    flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e5e7eb",
+  header: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center" },
+  addLink: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  addText: { color: colors.primary, fontWeight: "600", fontSize: fontSize.body },
+  iconChip: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  dot: { width: 12, height: 12, borderRadius: 6 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   rowBody: { flex: 1 },
-  rowName: { fontSize: 16, fontWeight: "500" },
-  rowMeta: { fontSize: 12, color: "#6b7280" },
-  rowDuration: { fontSize: 15, fontWeight: "600" },
-  error: { color: "#dc2626" },
+  rowName: { fontSize: fontSize.body, fontWeight: "600", color: colors.text },
+  rowMeta: { fontSize: fontSize.caption, color: colors.textSecondary, marginTop: 2 },
+  rowDuration: {
+    fontSize: fontSize.body,
+    fontWeight: "700",
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
+  },
+  error: { color: colors.danger, fontSize: fontSize.body },
 });
