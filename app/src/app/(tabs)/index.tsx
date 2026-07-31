@@ -1,14 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { HomeScreen } from "../../screens/HomeScreen";
 
-export default function HomeScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Home — stats will appear here</Text>
-    </View>
-  );
+export default function HomeRoute() {
+  return <HomeScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-});
