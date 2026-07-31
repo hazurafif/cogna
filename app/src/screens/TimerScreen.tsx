@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession } from "../api/sessions";
+import { Button } from "../components/Button";
+import { Chip } from "../components/Chip";
+import { Screen } from "../components/Screen";
+import { colors } from "../theme/colors";
+import { fontSize, spacing } from "../theme/tokens";
 import { localISO } from "../utils/time";
 
 function formatElapsed(ms: number): string {
@@ -64,85 +70,80 @@ export function TimerScreen() {
       setStartedAt(null);
       router.push("/(tabs)/history");
     } catch {
-      intervalRef.current = setInterval(() => setElapsed(Date.now() - startedAt), 1000);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(
+        () => setElapsed(Date.now() - startedAt),
+        1000,
+      );
       setError("Could not save session. Try again.");
       setSaving(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Study timer</Text>
+    <Screen title="Study timer">
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <View style={styles.subjectRow}>
-        {subjects.map((s) => (
-          <Pressable
-            key={s.id}
-            testID={`subject-${s.id}`}
-            onPress={() => setSubjectId(s.id)}
-            style={[styles.chip, subjectId === s.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, subjectId === s.id && styles.chipTextActive]}>
-              {s.name}
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.subjectRow}>
+          {subjects.map((s) => (
+            <Chip
+              key={s.id}
+              label={s.name}
+              selected={subjectId === s.id}
+              onPress={() => setSubjectId(s.id)}
+            />
+          ))}
+        </View>
+        {subjects.length === 0 ? (
+          <Text style={styles.hint}>Add a subject first (Subjects tab).</Text>
+        ) : null}
+
+        {startedAt !== null ? (
+          <View style={styles.timerBox}>
+            <Ionicons name="stopwatch-outline" size={64} color={colors.primary} />
+            <Text style={styles.elapsed} testID="elapsed">
+              {formatElapsed(elapsed)}
             </Text>
-          </Pressable>
-        ))}
-      </View>
-      {subjects.length === 0 ? (
-        <Text>Add a subject first (Subjects tab).</Text>
-      ) : null}
+            <Text style={styles.runningLabel}>
+              {subjects.find((s) => s.id === subjectId)?.name ?? ""} · timer running
+            </Text>
+          </View>
+        ) : null}
 
-      {startedAt !== null ? (
-        <Text style={styles.elapsed} testID="elapsed">
-          {formatElapsed(elapsed)}
-        </Text>
-      ) : null}
-
-      <Pressable
-        testID="start-button"
-        style={[
-          styles.button,
-          subjectId === null && styles.buttonDisabled,
-          startedAt !== null && styles.buttonDisabled,
-        ]}
-        onPress={start}
-        disabled={subjectId === null || startedAt !== null}
-      >
-        <Text style={styles.buttonText}>
-          {startedAt === null ? "Start studying" : "Running…"}
-        </Text>
-      </Pressable>
-
-      {startedAt !== null ? (
-        <Pressable testID="stop-button" style={styles.stopButton} onPress={stop} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? "Saving…" : "Stop and save"}</Text>
-        </Pressable>
-      ) : null}
-    </ScrollView>
+        <View style={styles.actions}>
+          <Button
+            title={startedAt === null ? "Start studying" : "Running…"}
+            onPress={start}
+            disabled={subjectId === null || startedAt !== null}
+            testID="start-button"
+          />
+          {startedAt !== null ? (
+            <Button
+              title="Stop and save"
+              variant="danger"
+              onPress={stop}
+              loading={saving}
+              testID="stop-button"
+            />
+          ) : null}
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, gap: 16 },
-  title: { fontSize: 24, fontWeight: "700" },
-  subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderWidth: 1, borderColor: "#d1d5db", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
-  },
-  chipActive: { backgroundColor: "#4F46E5", borderColor: "#4F46E5" },
-  chipText: { fontSize: 14 },
-  chipTextActive: { color: "#fff" },
+  content: { gap: spacing.lg, paddingBottom: spacing.xl },
+  subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  hint: { color: colors.textMuted, fontSize: fontSize.body },
+  timerBox: { alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
   elapsed: {
-    fontSize: 56, fontWeight: "700", textAlign: "center", fontVariant: ["tabular-nums"],
+    fontSize: fontSize.hero,
+    fontWeight: "700",
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
   },
-  button: {
-    backgroundColor: "#4F46E5", borderRadius: 999, paddingVertical: 16, alignItems: "center",
-  },
-  buttonDisabled: { backgroundColor: "#a5b4fc" },
-  stopButton: {
-    backgroundColor: "#dc2626", borderRadius: 999, paddingVertical: 16, alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  error: { color: "#dc2626" },
+  runningLabel: { color: colors.textSecondary, fontSize: fontSize.caption },
+  actions: { gap: spacing.md, marginTop: spacing.md },
+  error: { color: colors.danger, fontSize: fontSize.body },
 });
