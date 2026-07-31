@@ -54,10 +54,3 @@ func pathID(r *http.Request) (int64, bool) {
 	}
 	return id, true
 }
-
-// Temporary stubs until Task 8 implements the real handlers.
-type statsHandlers struct{ st *store.Store }
-
-func (h *statsHandlers) summary(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "")
-}

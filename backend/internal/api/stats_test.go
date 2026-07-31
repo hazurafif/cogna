@@ -1,0 +1,63 @@
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+	"testing"
+	"time"
+)
+
+func TestStatsSummary(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "stat@example.com", "password123")
+	subID := createSubject(t, ts, token, "Math", "#4F46E5")
+
+	// Dates relative to the real "today" so week/streak assertions hold on any run date
+	today := time.Now().Format("2006-01-02")
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	createSession(t, ts, token, subID, yesterday+"T09:00:00", yesterday+"T10:00:00")
+	createSession(t, ts, token, subID, today+"T09:00:00", today+"T11:00:00")
+
+	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/api/v1/stats/summary", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("summary: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	var sum struct {
+		TotalMinutes int64 `json:"total_minutes"`
+		WeekMinutes  int64 `json:"week_minutes"`
+		StreakDays   int   `json:"streak_days"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&sum); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if sum.TotalMinutes != 180 {
+		t.Fatalf("total = %d, want 180", sum.TotalMinutes)
+	}
+	if sum.StreakDays != 2 {
+		t.Fatalf("streak = %d, want 2", sum.StreakDays)
+	}
+	// Only assert week >= 120: today's 120 minutes are always in the current
+	// week, but yesterday may fall in the previous week on a Monday.
+	if sum.WeekMinutes < 120 {
+		t.Fatalf("week = %d, want at least 120", sum.WeekMinutes)
+	}
+}
+
+func TestStatsSummaryRequiresAuth(t *testing.T) {
+	ts := newTestServer(t)
+
+	resp, err := http.Get(ts.URL + "/api/v1/stats/summary")
+	if err != nil {
+		t.Fatalf("summary: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", resp.StatusCode)
+	}
+}
