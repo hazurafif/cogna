@@ -47,7 +47,7 @@ func (s *Store) Summary(userID int64, now time.Time) (*Summary, error) {
 		 FROM sessions sess JOIN subjects sub ON sub.id = sess.subject_id
 		 WHERE sess.user_id = ?
 		 GROUP BY sub.id, sub.name, sub.color
-		 ORDER BY SUM(sess.duration_minutes) DESC`,
+		 ORDER BY SUM(sess.duration_minutes) DESC, sub.id ASC`,
 		userID,
 	)
 	if err != nil {

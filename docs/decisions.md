@@ -32,3 +32,6 @@ decisions as they are made; never rewrite history.
   response timing does not reveal account existence; register still returns 409 on duplicate
   email (accepted tradeoff; rate limiting deferred).
 - **Password limits** — passwords must be 8–72 bytes (bcrypt's input limit).
+- **Stats test arithmetic** — plan test expectations corrected during implementation (total 330,
+  week 270, Math 210); handler-level stats test uses time.Now()-relative dates so it passes on any
+  run date.
