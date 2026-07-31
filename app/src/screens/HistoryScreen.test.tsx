@@ -58,4 +58,25 @@ describe("HistoryScreen", () => {
     await fireEvent.press(getByText("Biology"));
     expect(require("expo-router").router.push).toHaveBeenCalledWith("/session/2");
   });
+
+  it("shows an error when sessions fail to load", async () => {
+    mockListSessions.mockRejectedValue(new Error("boom"));
+
+    const { getByText } = await render(<HistoryScreen />);
+    await waitFor(() => expect(getByText(/could not load sessions/i)).toBeTruthy());
+  });
+
+  it("shows no error after a successful load", async () => {
+    mockListSessions.mockResolvedValue([
+      {
+        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_color: "#10B981",
+        started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
+        duration_minutes: 60, source: "timer", note: null, created_at: "",
+      },
+    ]);
+
+    const { getByText, queryByText } = await render(<HistoryScreen />);
+    await waitFor(() => expect(getByText("Biology")).toBeTruthy());
+    expect(queryByText(/could not load sessions/i)).toBeNull();
+  });
 });

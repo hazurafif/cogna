@@ -69,4 +69,47 @@ describe("SessionDetailScreen", () => {
     await fireEvent.press(getByText("Edit"));
     expect(require("expo-router").router.push).toHaveBeenCalledWith("/session/2/edit");
   });
+
+  it("shows an error when delete fails", async () => {
+    mockGetSession.mockResolvedValue({
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
+      duration_minutes: 60, source: "timer", note: null, created_at: "",
+    });
+    mockDeleteSession.mockRejectedValue(new Error("boom"));
+
+    const { getByText } = await render(<SessionDetailScreen />);
+    await waitFor(() => expect(getByText("History")).toBeTruthy());
+
+    await fireEvent.press(getByText("Delete"));
+    await waitFor(() => expect(getByText(/could not delete session/i)).toBeTruthy());
+  });
+
+  it("does not fire delete twice on double press", async () => {
+    mockGetSession.mockResolvedValue({
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
+      duration_minutes: 60, source: "timer", note: null, created_at: "",
+    });
+    let resolveDelete!: () => void;
+    mockDeleteSession.mockReturnValue(
+      new Promise<void>((resolve) => { resolveDelete = resolve; }),
+    );
+
+    const { getByText } = await render(<SessionDetailScreen />);
+    await waitFor(() => expect(getByText("History")).toBeTruthy());
+
+    const deleteButton = getByText("Delete");
+    const firstPress = fireEvent.press(deleteButton);
+    await waitFor(() => expect(mockDeleteSession).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getByText("Deleting…")).toBeTruthy());
+    await waitFor(() => expect(deleteButton).toBeDisabled());
+
+    await fireEvent.press(deleteButton);
+    expect(mockDeleteSession).toHaveBeenCalledTimes(1);
+
+    resolveDelete();
+    await firstPress;
+    await waitFor(() => expect(require("expo-router").router.back).toHaveBeenCalled());
+  });
 });

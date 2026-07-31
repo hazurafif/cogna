@@ -18,6 +18,7 @@ export function HistoryScreen() {
     if (!token) return;
     try {
       setSessions(await listSessions(token));
+      setError(null);
     } catch {
       setError("Could not load sessions.");
     }

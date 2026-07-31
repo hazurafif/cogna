@@ -10,11 +10,13 @@ export function SessionDetailScreen() {
   const { token } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!token || !id) return;
     try {
       setSession(await getSession(token, Number(id)));
+      setError(null);
     } catch {
       setError("Could not load session.");
     }
@@ -27,12 +29,14 @@ export function SessionDetailScreen() {
   );
 
   const onDelete = async () => {
-    if (!token || !session) return;
+    if (!token || !session || deleting) return;
+    setDeleting(true);
     try {
       await deleteSession(token, session.id);
       router.back();
     } catch {
       setError("Could not delete session.");
+      setDeleting(false);
     }
   };
 
@@ -46,6 +50,7 @@ export function SessionDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.subjectRow}>
         <View style={[styles.dot, { backgroundColor: session.subject_color }]} />
         <Text style={styles.subjectName}>{session.subject_name}</Text>
@@ -61,8 +66,8 @@ export function SessionDetailScreen() {
       <Pressable style={styles.editButton} onPress={() => router.push(`/session/${session.id}/edit`)}>
         <Text style={styles.editText}>Edit</Text>
       </Pressable>
-      <Pressable style={styles.deleteButton} onPress={onDelete}>
-        <Text style={styles.deleteText}>Delete</Text>
+      <Pressable style={styles.deleteButton} onPress={onDelete} disabled={deleting}>
+        <Text style={styles.deleteText}>{deleting ? "Deleting…" : "Delete"}</Text>
       </Pressable>
     </ScrollView>
   );
