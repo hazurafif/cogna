@@ -55,25 +55,7 @@ func pathID(r *http.Request) (int64, bool) {
 	return id, true
 }
 
-// Temporary stubs until Tasks 7-8 implement the real handlers.
-type sessionHandlers struct{ st *store.Store }
-
-func (h *sessionHandlers) list(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, []any{})
-}
-func (h *sessionHandlers) get(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "")
-}
-func (h *sessionHandlers) create(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "")
-}
-func (h *sessionHandlers) update(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "")
-}
-func (h *sessionHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "")
-}
-
+// Temporary stubs until Task 8 implements the real handlers.
 type statsHandlers struct{ st *store.Store }
 
 func (h *statsHandlers) summary(w http.ResponseWriter, r *http.Request) {
