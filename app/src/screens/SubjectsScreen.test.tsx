@@ -60,9 +60,9 @@ describe("SubjectsScreen", () => {
     ]);
     mockDelete.mockResolvedValue(undefined);
 
-    const { getByText } = await render(<SubjectsScreen />);
-    await waitFor(() => expect(getByText("Math")).toBeTruthy());
-    await fireEvent.press(getByText("Delete"));
+    const { getByTestId } = await render(<SubjectsScreen />);
+    await waitFor(() => expect(getByTestId("delete-1")).toBeTruthy());
+    await fireEvent.press(getByTestId("delete-1"));
 
     await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("tok", 1));
   });
