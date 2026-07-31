@@ -25,6 +25,9 @@ var (
 	ErrSubjectInUse = errors.New("subject in use")
 )
 
+// timeFormat is the canonical timestamp layout for rows written to SQLite.
+const timeFormat = "2006-01-02T15:04:05"
+
 // Store wraps the SQLite database and applies migrations on open.
 type Store struct {
 	db *sql.DB

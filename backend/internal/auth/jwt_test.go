@@ -1,6 +1,12 @@
 package auth
 
-import "testing"
+import (
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+)
 
 func TestIssueAndParseToken(t *testing.T) {
 	const secret = "test-secret"
@@ -30,5 +36,38 @@ func TestParseTokenRejectsBadSecret(t *testing.T) {
 func TestParseTokenRejectsGarbage(t *testing.T) {
 	if _, err := ParseToken("secret", "not-a-token"); err == nil {
 		t.Fatal("expected error for garbage token")
+	}
+}
+
+func TestParseTokenRejectsAlgNone(t *testing.T) {
+	claims := Claims{
+		UserID: 1,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodNone, claims).
+		SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		t.Fatalf("forge token: %v", err)
+	}
+	if _, err := ParseToken("test-secret", token); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("err = %v, want ErrInvalidToken", err)
+	}
+}
+
+func TestParseTokenRejectsExpired(t *testing.T) {
+	claims := Claims{
+		UserID: 1,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+		},
+	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("test-secret"))
+	if err != nil {
+		t.Fatalf("sign token: %v", err)
+	}
+	if _, err := ParseToken("test-secret", token); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("err = %v, want ErrInvalidToken", err)
 	}
 }

@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+
+	"cogna/backend/internal/api"
+	"cogna/backend/internal/store"
 )
 
 func envOr(key, fallback string) string {
@@ -15,18 +18,27 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
-func newRouter() http.Handler {
+func newRouter(st *store.Store, secret string) http.Handler {
 	r := chi.NewRouter()
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	r.Mount("/", api.NewRouter(st, secret))
 	return r
 }
 
 func main() {
 	addr := ":" + envOr("PORT", "8080")
-	server := &http.Server{Addr: addr, Handler: newRouter()}
+	dbPath := envOr("DATABASE_PATH", "data/cogna.db")
+	secret := os.Getenv("JWT_SECRET")
+	if len(secret) < 32 {
+		log.Fatal("JWT_SECRET must be set to at least 32 characters")
+	}
+
+	st, err := store.Open(dbPath)
+	if err != nil {
+		log.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+
+	server := &http.Server{Addr: addr, Handler: newRouter(st, secret)}
 	log.Printf("cogna backend listening on %s", addr)
 	log.Fatal(server.ListenAndServe())
 }
