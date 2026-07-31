@@ -66,4 +66,14 @@ describe("TimerScreen", () => {
     await fireEvent.press(getByTestId("start-button"));
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
+
+  it("disables the start button while a run is in progress", async () => {
+    const { getByText, getByTestId } = await render(<TimerScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.press(getByTestId("start-button"));
+
+    expect(getByTestId("start-button").props.accessibilityState.disabled).toBe(true);
+  });
 });

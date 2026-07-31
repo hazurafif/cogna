@@ -99,9 +99,13 @@ export function TimerScreen() {
 
       <Pressable
         testID="start-button"
-        style={[styles.button, subjectId === null && styles.buttonDisabled]}
+        style={[
+          styles.button,
+          subjectId === null && styles.buttonDisabled,
+          startedAt !== null && styles.buttonDisabled,
+        ]}
         onPress={start}
-        disabled={subjectId === null}
+        disabled={subjectId === null || startedAt !== null}
       >
         <Text style={styles.buttonText}>
           {startedAt === null ? "Start studying" : "Running…"}
