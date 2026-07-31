@@ -15,10 +15,14 @@ import (
 var migrationsFS embed.FS
 
 var (
-	ErrNotFound        = errors.New("not found")
-	ErrDuplicateEmail  = errors.New("duplicate email")
+	// ErrNotFound is returned when a requested row does not exist.
+	ErrNotFound = errors.New("not found")
+	// ErrDuplicateEmail is returned when registering an email that is already taken.
+	ErrDuplicateEmail = errors.New("duplicate email")
+	// ErrSubjectNotFound is returned when a subject does not exist.
 	ErrSubjectNotFound = errors.New("subject not found")
-	ErrSubjectInUse    = errors.New("subject in use")
+	// ErrSubjectInUse is returned when a subject cannot be deleted because sessions reference it.
+	ErrSubjectInUse = errors.New("subject in use")
 )
 
 // Store wraps the SQLite database and applies migrations on open.
@@ -53,14 +57,17 @@ func Open(path string) (*Store, error) {
 func (s *Store) Close() error { return s.db.Close() }
 
 // migrate applies all pending migrations in order.
-func (s *Store) migrate() error {
+func (s *Store) migrate() error { return s.migrateWith(migrationsFS) }
+
+// migrateWith applies all pending migrations from fsys in order.
+func (s *Store) migrateWith(fsys fs.FS) error {
 	if _, err := s.db.Exec(
 		`CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY)`,
 	); err != nil {
 		return fmt.Errorf("create migrations table: %w", err)
 	}
 
-	entries, err := fs.ReadDir(migrationsFS, "migrations")
+	entries, err := fs.ReadDir(fsys, "migrations")
 	if err != nil {
 		return fmt.Errorf("read migrations dir: %w", err)
 	}
@@ -81,7 +88,7 @@ func (s *Store) migrate() error {
 			continue
 		}
 
-		sql, err := migrationsFS.ReadFile("migrations/" + name)
+		sql, err := fs.ReadFile(fsys, "migrations/"+name)
 		if err != nil {
 			return fmt.Errorf("read migration %s: %w", name, err)
 		}
