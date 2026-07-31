@@ -1,14 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { TimerScreen } from "../../screens/TimerScreen";
 
-export default function TimerScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Timer — coming soon</Text>
-    </View>
-  );
+export default function TimerRoute() {
+  return <TimerScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-});
