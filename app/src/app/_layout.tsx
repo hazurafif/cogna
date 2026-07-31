@@ -14,6 +14,8 @@ function RootNavigator() {
       <Stack.Protected guard={!!token}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="session/[id]" />
+        <Stack.Screen name="session/new" />
+        <Stack.Screen name="session/[id]/edit" />
       </Stack.Protected>
       <Stack.Protected guard={!token}>
         <Stack.Screen name="(auth)" />
