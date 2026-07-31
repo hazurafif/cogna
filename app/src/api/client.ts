@@ -38,5 +38,8 @@ export async function api<T>(
     }
     throw new ApiError(res.status, code, message);
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   return (await res.json()) as T;
 }

@@ -32,6 +32,8 @@ describe("token storage", () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => jest.restoreAllMocks());
+
   it("stores and loads via secure store on native", async () => {
     mockedSecureStore.getItemAsync.mockResolvedValue("tok-1");
     await saveToken("tok-1");

@@ -53,6 +53,18 @@ describe("api client", () => {
     }
   });
 
+  it("returns undefined for 204 responses", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: async () => {
+        throw new Error("no body");
+      },
+    });
+
+    await expect(api("/api/v1/sessions/1", { method: "DELETE", token: "abc" })).resolves.toBeUndefined();
+  });
+
   it("falls back to a generic error for non-JSON bodies", async () => {
     mockFetch.mockResolvedValue({
       ok: false,
