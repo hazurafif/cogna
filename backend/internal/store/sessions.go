@@ -54,7 +54,10 @@ func durationMinutes(startedAt, endedAt string) (int64, error) {
 // ErrSubjectNotFound when the subject does not belong to the user.
 func (s *Store) CreateSession(userID, subjectID int64, startedAt, endedAt, source string, note *string) (*Session, error) {
 	if _, err := s.SubjectByID(userID, subjectID); err != nil {
-		return nil, ErrSubjectNotFound
+		if errors.Is(err, ErrSubjectNotFound) {
+			return nil, ErrSubjectNotFound
+		}
+		return nil, fmt.Errorf("check subject: %w", err)
 	}
 	started, err := ParseTimestamp(startedAt)
 	if err != nil {
@@ -166,7 +169,10 @@ func (s *Store) ListSessions(userID int64, from, to string, subjectID int64) ([]
 // ErrSubjectNotFound when the new subject does not belong to the user.
 func (s *Store) UpdateSession(userID, id, subjectID int64, startedAt, endedAt string, note *string) (*Session, error) {
 	if _, err := s.SubjectByID(userID, subjectID); err != nil {
-		return nil, ErrSubjectNotFound
+		if errors.Is(err, ErrSubjectNotFound) {
+			return nil, ErrSubjectNotFound
+		}
+		return nil, fmt.Errorf("check subject: %w", err)
 	}
 	started, err := ParseTimestamp(startedAt)
 	if err != nil {

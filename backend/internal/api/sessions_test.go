@@ -305,3 +305,122 @@ func TestSessionsInternalErrors(t *testing.T) {
 		t.Fatalf("delete: status = %d, want 500", resp.StatusCode)
 	}
 }
+
+func TestCreateSessionInternalError(t *testing.T) {
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	ts := httptest.NewServer(NewRouter(st, "test-secret"))
+	defer ts.Close()
+
+	token := registerUser(t, ts, "cerr@example.com", "password123")
+	subID := createSubject(t, ts, token, "Math", "#4F46E5")
+
+	st.Close()
+
+	body := bytes.NewBufferString(`{"subject_id":` + strconvFormatInt(subID) +
+		`,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`)
+	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/sessions", body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+func TestUpdateSessionInternalError(t *testing.T) {
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	ts := httptest.NewServer(NewRouter(st, "test-secret"))
+	defer ts.Close()
+
+	token := registerUser(t, ts, "uerr@example.com", "password123")
+	subID := createSubject(t, ts, token, "Math", "#4F46E5")
+	id := createSession(t, ts, token, subID, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
+
+	st.Close()
+
+	req, _ := http.NewRequest(http.MethodPut, ts.URL+"/api/v1/sessions/"+strconvFormatInt(id),
+		strings.NewReader(`{"subject_id":`+strconvFormatInt(subID)+`,"started_at":"2026-07-31T08:00:00","ended_at":"2026-07-31T09:00:00","source":"manual"}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+func TestCreateSessionRejectsOffsetMismatch(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "off@example.com", "password123")
+	subID := createSubject(t, ts, token, "Math", "#4F46E5")
+
+	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/sessions",
+		strings.NewReader(`{"subject_id":`+strconvFormatInt(subID)+`,"started_at":"2026-07-31T08:00:00Z","ended_at":"2026-07-31T09:00:00+02:00","source":"manual"}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Code != "invalid_range" {
+		t.Fatalf("error code = %q, want invalid_range", body.Error.Code)
+	}
+}
+
+func TestUpdateSessionRejectsOtherUsersSubject(t *testing.T) {
+	ts := newTestServer(t)
+	tokenA := registerUser(t, ts, "updsub-a@example.com", "password123")
+	tokenB := registerUser(t, ts, "updsub-b@example.com", "password123")
+	subA := createSubject(t, ts, tokenA, "Mine", "#000000")
+	subB := createSubject(t, ts, tokenB, "Mine-b", "#000000")
+	id := createSession(t, ts, tokenB, subB, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
+
+	req, _ := http.NewRequest(http.MethodPut, ts.URL+"/api/v1/sessions/"+strconvFormatInt(id),
+		strings.NewReader(`{"subject_id":`+strconvFormatInt(subA)+`,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`))
+	req.Header.Set("Authorization", "Bearer "+tokenB)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("put: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Code != "invalid_subject" {
+		t.Fatalf("error code = %q, want invalid_subject", body.Error.Code)
+	}
+}

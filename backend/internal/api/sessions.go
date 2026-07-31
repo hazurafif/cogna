@@ -24,15 +24,17 @@ func (h *sessionHandlers) validate(w http.ResponseWriter, p *sessionPayload) boo
 		writeError(w, http.StatusBadRequest, "invalid_subject", "subject_id must be a positive integer")
 		return false
 	}
-	if _, err := parseTime(p.StartedAt); err != nil {
+	start, err := parseTime(p.StartedAt)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_started_at", "started_at must be ISO 8601 like 2026-07-31T09:00:00")
 		return false
 	}
-	if _, err := parseTime(p.EndedAt); err != nil {
+	end, err := parseTime(p.EndedAt)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_ended_at", "ended_at must be ISO 8601 like 2026-07-31T09:00:00")
 		return false
 	}
-	if p.StartedAt >= p.EndedAt {
+	if !end.After(start) {
 		writeError(w, http.StatusBadRequest, "invalid_range", "started_at must be before ended_at")
 		return false
 	}
