@@ -10,7 +10,7 @@ A Strava-like study tracker: log study sessions, track time per subject, keep yo
 ## Prerequisites
 
 - Go 1.26+ (backend)
-- Node.js 20+ and npm (app)
+- Node.js 20+ and pnpm (app)
 
 ## Run the backend
 
@@ -26,7 +26,7 @@ without it). Real env vars take precedence over `.env` values.
 ## Run the app
 
     cd app
-    npm install
+    pnpm install
     npx expo start
 
 Press `w` for web, `i` for iOS simulator. The web app expects the backend at
@@ -36,7 +36,7 @@ Press `w` for web, `i` for iOS simulator. The web app expects the backend at
 ## Tests
 
 - Backend: `go test ./...` (coverage gate ≥ 80%: `go test ./... -cover`)
-- App: `npm test` (coverage gate ≥ 80%: `npm test -- --coverage`)
+- App: `pnpm test` (coverage gate ≥ 80%: `pnpm test -- --coverage`)
 
 ## Docs
 

@@ -30,9 +30,10 @@ specs below — don't duplicate that material here.
   - Lint/type: `go vet ./...` — must pass before considering work done
 - **App** (from `app/`):
   - Run: `npx expo start` (press `w` for web, `i` for iOS simulator)
-  - Test: `npm test`
+  - Install: `pnpm install` (pnpm is the package manager; keep `pnpm-lock.yaml` in sync, never mix lockfiles)
+  - Test: `pnpm test`
   - Typecheck: `npx tsc --noEmit` — must pass before considering work done
-  - Lint: `npx expo lint` — must pass before considering work done
+  - Lint: `pnpm lint` — must pass before considering work done
 - **Web frontend talks to the backend at `http://localhost:8080`** (Android emulator: `http://10.0.2.2:8080`).
   Start the backend first, then the app.
 
@@ -40,7 +41,7 @@ specs below — don't duplicate that material here.
 
 - **All software ships with tests.** No component is done without them.
 - **Coverage gate ≥ 80%** for new/changed code — measured with `go test -cover` (backend) and
-  `npm test -- --coverage` (app). Never silently lowered.
+  `pnpm test -- --coverage` (app). Never silently lowered.
 - Backend logic is unit-tested against an in-memory SQLite store (`file::memory:?cache=shared`,
   `SetMaxOpenConns(1)`); handlers are tested through `httptest` with a real router.
 - App logic is unit-tested with **mocked fetch** (API client) and React Native Testing Library
@@ -55,7 +56,7 @@ specs below — don't duplicate that material here.
     `docs:` docs only · `chore:` tooling/build
   - Example: `feat(backend): add register endpoint`
 - Before committing: `git status` and `git diff` — stage only intended files, never secrets.
-- A commit's tests must pass before committing (`go test ./...`, `npm test` as applicable).
+- A commit's tests must pass before committing (`go test ./...`, `pnpm test` as applicable).
 - Only push or open PRs when explicitly asked.
 - Commit messages are in English, imperative mood, summary line under 72 chars.
 
