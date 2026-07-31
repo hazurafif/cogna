@@ -23,3 +23,9 @@ decisions as they are made; never rewrite history.
 - **Local-first deployment** — No cloud infra for v1; backend runs locally on `:8080`.
 - **Go toolchain** — Upgraded to go1.26.5 (2026-07-31) via Homebrew; go.mod should track the
   stable release.
+- **JWT hardening** — HS256 only (`jwt.WithValidMethods`), JWT_SECRET must be ≥ 32 characters or
+  the server refuses to start (no default secret).
+- **Login anti-enumeration** — login performs a dummy bcrypt verification for unknown emails so
+  response timing does not reveal account existence; register still returns 409 on duplicate
+  email (accepted tradeoff; rate limiting deferred).
+- **Password limits** — passwords must be 8–72 bytes (bcrypt's input limit).
