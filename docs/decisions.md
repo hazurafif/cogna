@@ -39,3 +39,12 @@ decisions as they are made; never rewrite history.
   go-chi/cors, enabling the Expo web dev server to call the API.
 - **Data directory** — store.Open creates the DB parent directory (MkdirAll 0755) so a fresh clone
   runs out of the box with the default data/cogna.db path.
+
+## 2026-08-01
+
+- **RNTL v14 async APIs** — `@testing-library/react-native` v14 makes `render`, `renderHook`,
+  `fireEvent`, and `act` async; tests must `await` them. Plan snippets written against the v13
+  sync API were adapted during implementation.
+- **Typed expo-router routes** — Href types are generated into `.expo/types/router.d.ts` (gitignored)
+  by the dev server from existing route files; screens referencing routes created later (Task 13)
+  therefore don't typecheck against stale generated types until the dev server regenerates them.
