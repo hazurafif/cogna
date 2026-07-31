@@ -11,6 +11,8 @@ describe("theme tokens", () => {
     expect(colors.textSecondary).toBe("#9CA3AF");
     expect(colors.textMuted).toBe("#6B7280");
     expect(colors.danger).toBe("#F87171");
+    expect(colors.dangerFill).toBe("#DC2626");
+    expect(colors.white).toBe("#FFFFFF");
   });
 
   it("defines six subject accents", () => {

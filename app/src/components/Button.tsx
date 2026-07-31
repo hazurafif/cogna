@@ -17,7 +17,7 @@ type ButtonProps = {
 const variantStyles = {
   primary: { backgroundColor: colors.primary },
   outline: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-  danger: { backgroundColor: "#DC2626" },
+  danger: { backgroundColor: colors.dangerFill },
 } as const;
 
 export function Button({
