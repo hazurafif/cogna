@@ -1,14 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { SubjectsScreen } from "../../screens/SubjectsScreen";
 
-export default function SubjectsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Subjects — coming soon</Text>
-    </View>
-  );
+export default function SubjectsRoute() {
+  return <SubjectsScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-});
