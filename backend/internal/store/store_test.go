@@ -2,12 +2,25 @@ package store
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 	"testing/fstest"
 
 	_ "modernc.org/sqlite"
 )
+
+func TestOpenCreatesDataDir(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "nested", "dir", "cogna.db")
+	s, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer s.Close()
+	if _, err := os.Stat(filepath.Dir(dbPath)); err != nil {
+		t.Fatalf("data dir not created: %v", err)
+	}
+}
 
 func TestOpenRunsMigrations(t *testing.T) {
 	s, err := Open(":memory:")
@@ -141,7 +154,11 @@ func TestMigrateIdempotentAcrossFileReopen(t *testing.T) {
 }
 
 func TestOpenFailsOnBadPath(t *testing.T) {
-	if _, err := Open(filepath.Join(t.TempDir(), "missing", "cogna.db")); err == nil {
+	blocker := filepath.Join(t.TempDir(), "blocker")
+	if err := os.WriteFile(blocker, nil, 0o644); err != nil {
+		t.Fatalf("write blocker: %v", err)
+	}
+	if _, err := Open(filepath.Join(blocker, "missing", "cogna.db")); err == nil {
 		t.Fatal("expected error for unopenable path")
 	}
 }

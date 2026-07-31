@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"sort"
 
 	_ "modernc.org/sqlite"
@@ -38,6 +40,10 @@ func Open(path string) (*Store, error) {
 	dsn := path
 	if path == ":memory:" {
 		dsn = "file::memory:?cache=shared"
+	} else {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return nil, fmt.Errorf("create data dir: %w", err)
+		}
 	}
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
