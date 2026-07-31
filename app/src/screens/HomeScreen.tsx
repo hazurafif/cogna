@@ -1,8 +1,15 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { fetchSummary, Summary } from "../api/stats";
+import { Button } from "../components/Button";
+import { Screen } from "../components/Screen";
+import { StatCard } from "../components/StatCard";
+import { SubjectDot } from "../components/SubjectDot";
+import { colors } from "../theme/colors";
+import { fontSize, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
 
 export function HomeScreen() {
@@ -27,60 +34,60 @@ export function HomeScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
+    <Screen>
+      <View style={styles.topRow}>
+        <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
+        <Ionicons name="sync-outline" size={20} color={colors.textMuted} />
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {summary ? (
         <>
           <View style={styles.cardRow}>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>{formatDuration(summary.total_minutes)}</Text>
-              <Text style={styles.cardLabel}>All time</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>{formatDuration(summary.week_minutes)}</Text>
-              <Text style={styles.cardLabel}>This week</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>{summary.streak_days} days</Text>
-              <Text style={styles.cardLabel}>Streak</Text>
-            </View>
+            <StatCard icon="time-outline" value={formatDuration(summary.total_minutes)} label="ALL TIME" />
+            <StatCard icon="calendar-outline" value={formatDuration(summary.week_minutes)} label="THIS WEEK" />
+            <StatCard icon="flame-outline" value={`${summary.streak_days} days`} label="STREAK" highlighted />
           </View>
           <Text style={styles.sectionTitle}>By subject</Text>
           {summary.per_subject.map((s) => (
             <View key={s.subject_id} style={styles.subjectRow}>
-              <View style={[styles.dot, { backgroundColor: s.color }]} />
+              <SubjectDot color={s.color} />
               <Text style={styles.subjectName}>{s.name}</Text>
               <Text style={styles.subjectMinutes}>{formatMinutes(s.minutes)}</Text>
             </View>
           ))}
+          <View style={styles.logoutRow}>
+            <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
+            <Button title="Log out" variant="outline" onPress={() => logout()} testID="logout-button" />
+          </View>
         </>
       ) : null}
-      <Pressable style={styles.logoutButton} onPress={() => void logout()}>
-        <Text style={styles.logoutText}>Log out</Text>
-      </Pressable>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 12 },
-  greeting: { fontSize: 18, fontWeight: "600" },
-  cardRow: { flexDirection: "row", gap: 8 },
-  card: {
-    flex: 1, backgroundColor: "#f3f4f6", borderRadius: 12, padding: 12, alignItems: "center",
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  cardValue: { fontSize: 18, fontWeight: "700" },
-  cardLabel: { fontSize: 12, color: "#6b7280" },
-  sectionTitle: { fontSize: 16, fontWeight: "600", marginTop: 8 },
-  subjectRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  subjectName: { flex: 1, fontSize: 15 },
-  subjectMinutes: { fontSize: 15, fontWeight: "600" },
-  error: { color: "#dc2626" },
-  logoutButton: {
-    marginTop: 24, borderWidth: 1, borderColor: "#4F46E5", borderRadius: 8,
-    padding: 12, alignItems: "center",
+  greeting: { fontSize: fontSize.body, fontWeight: "600", color: colors.textSecondary },
+  cardRow: { flexDirection: "row", gap: spacing.sm },
+  sectionTitle: { fontSize: fontSize.title, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
+  subjectRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm + spacing.xs,
+    paddingVertical: spacing.xs + 2,
   },
-  logoutText: { color: "#4F46E5", fontWeight: "600" },
+  subjectName: { flex: 1, fontSize: fontSize.body, color: colors.text },
+  subjectMinutes: { fontSize: fontSize.body, fontWeight: "600", color: colors.text, fontVariant: ["tabular-nums"] },
+  logoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+  },
+  error: { color: colors.danger, fontSize: fontSize.body },
 });

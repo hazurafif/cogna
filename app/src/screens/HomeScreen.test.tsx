@@ -48,8 +48,16 @@ describe("HomeScreen", () => {
   });
 
   it("logs out on button press", async () => {
+    mockFetchSummary.mockResolvedValue({
+      total_minutes: 0,
+      week_minutes: 0,
+      streak_days: 0,
+      per_subject: [],
+    });
+
     const { getByText } = await render(<HomeScreen />);
 
+    await waitFor(() => expect(getByText("Log out")).toBeTruthy());
     await fireEvent.press(getByText("Log out"));
 
     expect(mockLogout).toHaveBeenCalled();
