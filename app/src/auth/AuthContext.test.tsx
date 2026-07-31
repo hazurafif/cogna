@@ -1,12 +1,16 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { fetchMe, login, register } from "../api/auth";
+import { onUnauthorized } from "../api/client";
 import { clearToken, loadToken } from "./token";
 
 jest.mock("../api/auth", () => ({
   fetchMe: jest.fn(),
   login: jest.fn(),
   register: jest.fn(),
+}));
+jest.mock("../api/client", () => ({
+  onUnauthorized: jest.fn(() => jest.fn()),
 }));
 jest.mock("./token", () => ({
   loadToken: jest.fn(),
@@ -19,6 +23,7 @@ const mockedLogin = login as jest.Mock;
 const mockedRegister = register as jest.Mock;
 const mockedLoadToken = loadToken as jest.Mock;
 const mockedClearToken = clearToken as jest.Mock;
+const mockedOnUnauthorized = onUnauthorized as jest.Mock;
 
 describe("AuthContext", () => {
   beforeEach(() => {
@@ -101,6 +106,25 @@ describe("AuthContext", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.token).toBeNull();
+  });
+
+  it("auto-logs-out when any API call returns 401", async () => {
+    mockedLoadToken.mockResolvedValue(null);
+
+    const { result, unmount } = await renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const handler = mockedOnUnauthorized.mock.calls[0][0];
+    await act(async () => {
+      await handler();
+    });
+
+    expect(mockedClearToken).toHaveBeenCalled();
+    expect(result.current.user).toBeNull();
+    expect(result.current.token).toBeNull();
+
+    await unmount();
+    expect(mockedOnUnauthorized.mock.results[0].value).toHaveBeenCalled();
   });
 
   it("throws when used outside an AuthProvider", async () => {

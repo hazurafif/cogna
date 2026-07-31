@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { fetchMe, login as apiLogin, register as apiRegister, User } from "../api/auth";
+import { onUnauthorized } from "../api/client";
 import { clearToken, loadToken, saveToken } from "./token";
 
 type AuthContextValue = {
@@ -32,6 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    return onUnauthorized(async () => {
+      await clearToken();
+      setToken(null);
+      setUser(null);
+    });
   }, []);
 
   const value = useMemo<AuthContextValue>(

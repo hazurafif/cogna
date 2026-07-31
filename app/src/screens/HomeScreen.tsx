@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { fetchSummary, Summary } from "../api/stats";
 import { formatDuration, formatMinutes } from "../utils/time";
 
 export function HomeScreen() {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +56,9 @@ export function HomeScreen() {
           ))}
         </>
       ) : null}
+      <Pressable style={styles.logoutButton} onPress={() => void logout()}>
+        <Text style={styles.logoutText}>Log out</Text>
+      </Pressable>
     </View>
   );
 }
@@ -75,4 +78,9 @@ const styles = StyleSheet.create({
   subjectName: { flex: 1, fontSize: 15 },
   subjectMinutes: { fontSize: 15, fontWeight: "600" },
   error: { color: "#dc2626" },
+  logoutButton: {
+    marginTop: 24, borderWidth: 1, borderColor: "#4F46E5", borderRadius: 8,
+    padding: 12, alignItems: "center",
+  },
+  logoutText: { color: "#4F46E5", fontWeight: "600" },
 });

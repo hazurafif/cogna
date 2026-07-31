@@ -1,5 +1,13 @@
 import { API_URL } from "./config";
 
+type UnauthorizedHandler = () => void;
+const unauthorizedHandlers = new Set<UnauthorizedHandler>();
+
+export function onUnauthorized(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandlers.add(handler);
+  return () => unauthorizedHandlers.delete(handler);
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -35,6 +43,9 @@ export async function api<T>(
       }
     } catch {
       // non-JSON error body; keep defaults
+    }
+    if (res.status === 401) {
+      unauthorizedHandlers.forEach((h) => h());
     }
     throw new ApiError(res.status, code, message);
   }

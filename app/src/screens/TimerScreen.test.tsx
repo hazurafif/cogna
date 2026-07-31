@@ -76,4 +76,33 @@ describe("TimerScreen", () => {
 
     expect(getByTestId("start-button").props.accessibilityState.disabled).toBe(true);
   });
+
+  it("keeps ticking and allows a retry after a failed save", async () => {
+    mockCreateSession.mockRejectedValueOnce(new Error("boom"));
+    mockCreateSession.mockResolvedValueOnce({ id: 9 });
+
+    const { getByText, getByTestId } = await render(<TimerScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.press(getByTestId("start-button"));
+
+    await act(async () => {
+      jest.advanceTimersByTime(10_000);
+    });
+    const before = getByTestId("elapsed").props.children;
+
+    await fireEvent.press(getByTestId("stop-button"));
+    await waitFor(() => expect(getByText(/could not save/i)).toBeTruthy());
+    expect(getByTestId("stop-button").props.accessibilityState.disabled).toBe(false);
+
+    await act(async () => {
+      jest.advanceTimersByTime(10_000);
+    });
+    const after = getByTestId("elapsed").props.children;
+    expect(after).not.toBe(before);
+
+    await fireEvent.press(getByTestId("stop-button"));
+    await waitFor(() => expect(mockCreateSession).toHaveBeenCalledTimes(2));
+  });
 });

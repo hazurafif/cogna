@@ -1,5 +1,5 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { HomeScreen } from "./HomeScreen";
 import { useAuth } from "../auth/AuthContext";
 import { fetchSummary } from "../api/stats";
@@ -13,11 +13,12 @@ jest.mock("expo-router", () => {
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockFetchSummary = fetchSummary as jest.Mock;
+const mockLogout = jest.fn();
 
 describe("HomeScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({ token: "tok" });
+    mockUseAuth.mockReturnValue({ token: "tok", user: null, logout: mockLogout });
   });
 
   it("renders stats from the summary", async () => {
@@ -44,5 +45,13 @@ describe("HomeScreen", () => {
 
     const { getByText } = await render(<HomeScreen />);
     await waitFor(() => expect(getByText(/could not load stats/i)).toBeTruthy());
+  });
+
+  it("logs out on button press", async () => {
+    const { getByText } = await render(<HomeScreen />);
+
+    await fireEvent.press(getByText("Log out"));
+
+    expect(mockLogout).toHaveBeenCalled();
   });
 });

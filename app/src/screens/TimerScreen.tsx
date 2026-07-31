@@ -64,6 +64,7 @@ export function TimerScreen() {
       setStartedAt(null);
       router.push("/(tabs)/history");
     } catch {
+      intervalRef.current = setInterval(() => setElapsed(Date.now() - startedAt), 1000);
       setError("Could not save session. Try again.");
       setSaving(false);
     }

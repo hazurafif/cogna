@@ -1,4 +1,4 @@
-import { ApiError, api } from "./client";
+import { ApiError, api, onUnauthorized } from "./client";
 import { API_URL } from "./config";
 
 describe("api client", () => {
@@ -63,6 +63,24 @@ describe("api client", () => {
     });
 
     await expect(api("/api/v1/sessions/1", { method: "DELETE", token: "abc" })).resolves.toBeUndefined();
+  });
+
+  it("notifies unauthorized handlers on 401", async () => {
+    const handler = jest.fn();
+    const unsubscribe = onUnauthorized(handler);
+
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { code: "unauthorized", message: "nope" } }),
+    });
+
+    await expect(api("/x")).rejects.toThrow(ApiError);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    await expect(api("/y")).rejects.toThrow(ApiError);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to a generic error for non-JSON bodies", async () => {
