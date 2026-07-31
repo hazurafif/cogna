@@ -34,10 +34,11 @@ func (s *Store) Summary(userID int64, now time.Time) (*Summary, error) {
 	}
 
 	weekStart := startOfWeek(now).Format("2006-01-02")
+	weekEnd := startOfWeek(now).AddDate(0, 0, 7).Format("2006-01-02")
 	if err := s.db.QueryRow(
 		`SELECT COALESCE(SUM(duration_minutes), 0) FROM sessions
-		 WHERE user_id = ? AND date(started_at) >= ?`,
-		userID, weekStart,
+		 WHERE user_id = ? AND date(started_at) >= ? AND date(started_at) < ?`,
+		userID, weekStart, weekEnd,
 	).Scan(&sum.WeekMinutes); err != nil {
 		return nil, fmt.Errorf("sum week: %w", err)
 	}

@@ -17,7 +17,8 @@ decisions as they are made; never rewrite history.
 - **Auth** — Email/password with bcrypt hashing; JWT bearer tokens (HS256, 24h expiry), no
   refresh tokens in v1.
 - **Timestamps** — Stored as RFC3339 in SQLite (TEXT), server-local time; day boundaries for
-  streaks/weekly stats computed server-side in server-local time.
+  streaks/weekly stats computed server-side in server-local time. (Superseded: see Timestamp
+  storage below — sessions normalize to offset-less local layout on write.)
 - **Timestamp storage** — session timestamps are normalized to offset-less local layout
   (2006-01-02T15:04:05) on write; RFC3339 input is accepted and its offset dropped, preserving
   the client's wall clock (server-local day semantics for stats).

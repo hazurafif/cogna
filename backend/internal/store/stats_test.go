@@ -87,6 +87,36 @@ func TestWeekBoundaryIsMondayStart(t *testing.T) {
 	}
 }
 
+func TestWeekExcludesSessionsFromNextWeek(t *testing.T) {
+	s := newTestStore(t)
+	userID := mustUser(t, s, "future@example.com")
+	math := mustSubject(t, s, userID, "Math")
+
+	// Monday 2026-07-27 starts the current week; Monday 2026-08-03 is next week.
+	if _, err := s.CreateSession(userID, math, "2026-07-27T09:00:00", "2026-07-27T10:00:00", "timer", nil); err != nil {
+		t.Fatalf("create monday: %v", err)
+	}
+	if _, err := s.CreateSession(userID, math, "2026-08-03T09:00:00", "2026-08-03T10:00:00", "timer", nil); err != nil {
+		t.Fatalf("create next monday: %v", err)
+	}
+
+	now, err := time.Parse(timeFormat, "2026-07-31T12:00:00")
+	if err != nil {
+		t.Fatalf("parse now: %v", err)
+	}
+	sum, err := s.Summary(userID, now)
+	if err != nil {
+		t.Fatalf("summary: %v", err)
+	}
+
+	if sum.WeekMinutes != 60 { // only the current-week session
+		t.Fatalf("week = %d, want 60", sum.WeekMinutes)
+	}
+	if sum.TotalMinutes != 120 { // both count for lifetime
+		t.Fatalf("total = %d, want 120", sum.TotalMinutes)
+	}
+}
+
 func TestSummaryEmpty(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "empty@example.com")
