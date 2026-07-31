@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -34,7 +34,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(dst); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json", "request body is not valid JSON")
-		return errors.New("invalid json: " + err.Error())
+		return fmt.Errorf("invalid json: %w", err)
 	}
 	return nil
 }
