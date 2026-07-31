@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 
 	"cogna/backend/internal/api"
 	"cogna/backend/internal/store"
@@ -18,6 +21,12 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
+// loadDotEnv loads a .env file. A missing file is fine (the env file is
+// optional); other errors (e.g. parse failures) are returned.
+func loadDotEnv(paths ...string) error {
+	return godotenv.Load(paths...)
+}
+
 func newRouter(st *store.Store, secret string) http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/", api.NewRouter(st, secret))
@@ -25,6 +34,10 @@ func newRouter(st *store.Store, secret string) http.Handler {
 }
 
 func main() {
+	if err := loadDotEnv(); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Printf("warning: could not load .env: %v", err)
+	}
+
 	addr := ":" + envOr("PORT", "8080")
 	dbPath := envOr("DATABASE_PATH", "data/cogna.db")
 	secret := os.Getenv("JWT_SECRET")

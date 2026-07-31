@@ -15,10 +15,13 @@ A Strava-like study tracker: log study sessions, track time per subject, keep yo
 ## Run the backend
 
     cd backend
+    cp .env.example .env   # then edit JWT_SECRET (min 32 characters)
     go run ./cmd/server
 
-Listens on `:8080`. Config via env vars: `PORT` (default 8080),
-`DATABASE_PATH` (default `data/cogna.db`), `JWT_SECRET` (required, min 32 characters — the server refuses to start without it).
+Listens on `:8080`. Config via a `.env` file (see `.env.example`) or env
+vars: `PORT` (default 8080), `DATABASE_PATH` (default `data/cogna.db`),
+`JWT_SECRET` (required, min 32 characters — the server refuses to start
+without it). Real env vars take precedence over `.env` values.
 
 ## Run the app
 

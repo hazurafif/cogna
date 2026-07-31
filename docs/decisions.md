@@ -49,3 +49,6 @@ decisions as they are made; never rewrite history.
 - **Typed expo-router routes** — Href types are generated into `.expo/types/router.d.ts` (gitignored)
   by the dev server from existing route files; screens referencing routes created later (Task 13)
   therefore don't typecheck against stale generated types until the dev server regenerates them.
+- **.env support** — the backend loads `backend/.env` via `joho/godotenv` at startup; a missing
+  file is fine, real env vars take precedence, `.env` is gitignored, `.env.example` documents the
+  vars.
