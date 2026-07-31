@@ -23,12 +23,23 @@ type Session struct {
 	CreatedAt       string  `json:"created_at"`
 }
 
+// ParseTimestamp parses a timestamp in either the local layout
+// (2006-01-02T15:04:05) or RFC3339 with an offset.
+func ParseTimestamp(s string) (time.Time, error) {
+	for _, layout := range []string{timeFormat, time.RFC3339} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("parse timestamp %q", s)
+}
+
 func durationMinutes(startedAt, endedAt string) (int64, error) {
-	start, err := time.Parse(timeFormat, startedAt)
+	start, err := ParseTimestamp(startedAt)
 	if err != nil {
 		return 0, fmt.Errorf("parse started_at: %w", err)
 	}
-	end, err := time.Parse(timeFormat, endedAt)
+	end, err := ParseTimestamp(endedAt)
 	if err != nil {
 		return 0, fmt.Errorf("parse ended_at: %w", err)
 	}
@@ -45,6 +56,16 @@ func (s *Store) CreateSession(userID, subjectID int64, startedAt, endedAt, sourc
 	if _, err := s.SubjectByID(userID, subjectID); err != nil {
 		return nil, ErrSubjectNotFound
 	}
+	started, err := ParseTimestamp(startedAt)
+	if err != nil {
+		return nil, err
+	}
+	ended, err := ParseTimestamp(endedAt)
+	if err != nil {
+		return nil, err
+	}
+	startedAt = started.Format(timeFormat)
+	endedAt = ended.Format(timeFormat)
 	mins, err := durationMinutes(startedAt, endedAt)
 	if err != nil {
 		return nil, err
@@ -147,6 +168,16 @@ func (s *Store) UpdateSession(userID, id, subjectID int64, startedAt, endedAt st
 	if _, err := s.SubjectByID(userID, subjectID); err != nil {
 		return nil, ErrSubjectNotFound
 	}
+	started, err := ParseTimestamp(startedAt)
+	if err != nil {
+		return nil, err
+	}
+	ended, err := ParseTimestamp(endedAt)
+	if err != nil {
+		return nil, err
+	}
+	startedAt = started.Format(timeFormat)
+	endedAt = ended.Format(timeFormat)
 	mins, err := durationMinutes(startedAt, endedAt)
 	if err != nil {
 		return nil, err

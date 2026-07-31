@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cogna/backend/internal/store"
 )
 
 // trimLower trims surrounding whitespace and lowercases a string.
@@ -17,17 +19,9 @@ func strconvFormatInt(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
 
-// timeFormat is the canonical timestamp layout accepted by the API.
-const timeFormat = "2006-01-02T15:04:05"
-
-// parseTime parses s as timeFormat or RFC 3339.
+// parseTime parses s as the canonical layout or RFC 3339.
 func parseTime(s string) (time.Time, error) {
-	for _, layout := range []string{timeFormat, time.RFC3339} {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t, nil
-		}
-	}
-	return time.Time{}, errors.New("invalid time format")
+	return store.ParseTimestamp(s)
 }
 
 // parseInt64 parses s into a positive int64.

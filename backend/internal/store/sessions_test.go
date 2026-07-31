@@ -149,3 +149,28 @@ func TestDurationMinutesRejectsBadTimes(t *testing.T) {
 		t.Fatal("expected error for bad ended_at")
 	}
 }
+
+func TestCreateSessionAcceptsRFC3339(t *testing.T) {
+	s := newTestStore(t)
+	userID := mustUser(t, s, "rfc3339@example.com")
+	subjectID := mustSubject(t, s, userID, "Math")
+
+	sess, err := s.CreateSession(userID, subjectID, "2026-07-31T09:00:00Z", "2026-07-31T10:30:00Z", "timer", nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if sess.DurationMinutes != 90 {
+		t.Fatalf("duration = %d, want 90", sess.DurationMinutes)
+	}
+	if sess.StartedAt != "2026-07-31T09:00:00" {
+		t.Fatalf("started_at = %q, want normalized 2026-07-31T09:00:00", sess.StartedAt)
+	}
+
+	got, err := s.SessionByID(userID, sess.ID)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.StartedAt != "2026-07-31T09:00:00" || got.EndedAt != "2026-07-31T10:30:00" {
+		t.Fatalf("got %+v", got)
+	}
+}

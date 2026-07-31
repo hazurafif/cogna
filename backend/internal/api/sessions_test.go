@@ -113,6 +113,32 @@ func TestCreateSessionValidation(t *testing.T) {
 	}
 }
 
+func TestCreateSessionAcceptsRFC3339(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "rfc@example.com", "password123")
+	subID := createSubject(t, ts, token, "Math", "#4F46E5")
+
+	id := createSession(t, ts, token, subID, "2026-07-31T09:00:00Z", "2026-07-31T10:30:00Z")
+
+	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/api/v1/sessions/"+strconvFormatInt(id), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+	var sess struct {
+		DurationMinutes int64  `json:"duration_minutes"`
+		StartedAt       string `json:"started_at"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&sess); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if sess.DurationMinutes != 90 || sess.StartedAt != "2026-07-31T09:00:00" {
+		t.Fatalf("got %+v", sess)
+	}
+}
+
 func TestSessionSubjectScopedToUser(t *testing.T) {
 	ts := newTestServer(t)
 	tokenA := registerUser(t, ts, "ss-a@example.com", "password123")
