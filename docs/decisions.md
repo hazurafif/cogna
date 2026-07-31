@@ -35,3 +35,7 @@ decisions as they are made; never rewrite history.
 - **Stats test arithmetic** — plan test expectations corrected during implementation (total 330,
   week 270, Math 210); handler-level stats test uses time.Now()-relative dates so it passes on any
   run date.
+- **CORS** — wildcard origins with AllowCredentials=false (safe combo for bearer-token auth) via
+  go-chi/cors, enabling the Expo web dev server to call the API.
+- **Data directory** — store.Open creates the DB parent directory (MkdirAll 0755) so a fresh clone
+  runs out of the box with the default data/cogna.db path.

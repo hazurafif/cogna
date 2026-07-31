@@ -29,6 +29,49 @@ func TestHealth(t *testing.T) {
 	}
 }
 
+func TestCORSPreflight(t *testing.T) {
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/v1/subjects", nil)
+	req.Header.Set("Origin", "http://localhost:8081")
+	req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	rec := httptest.NewRecorder()
+
+	NewRouter(st, "test-secret").ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "*")
+	}
+}
+
+func TestCORSOnNormalRequest(t *testing.T) {
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req.Header.Set("Origin", "http://localhost:8081")
+	rec := httptest.NewRecorder()
+
+	NewRouter(st, "test-secret").ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "*")
+	}
+}
+
 func TestLoginRejectsInvalidJSON(t *testing.T) {
 	ts := newTestServer(t)
 
