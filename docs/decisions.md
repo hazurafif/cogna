@@ -52,3 +52,6 @@ decisions as they are made; never rewrite history.
 - **.env support** — the backend loads `backend/.env` via `joho/godotenv` at startup; a missing
   file is fine, real env vars take precedence, `.env` is gitignored, `.env.example` documents the
   vars.
+- **@expo/vector-icons explicit dependency** — Expo SDK 57's `expo` package no longer bundles
+  `@expo/vector-icons` (the dark-ui plan assumed it was bundled). It is an explicit dependency
+  (`expo install @expo/vector-icons@^15.0.2`), used for Ionicons in the shared components.
