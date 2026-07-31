@@ -67,6 +67,18 @@ describe("NewSessionScreen", () => {
     await waitFor(() => expect(getByText(/valid date/i)).toBeTruthy());
   });
 
+  it("rejects impossible dates like 2026-02-30", async () => {
+    const { getByPlaceholderText, getByText } = await render(<NewSessionScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.changeText(getByPlaceholderText("Date (YYYY-MM-DD)"), "2026-02-30");
+    await fireEvent.press(getByText("Save session"));
+
+    await waitFor(() => expect(getByText(/valid date/i)).toBeTruthy());
+    expect(mockCreateSession).not.toHaveBeenCalled();
+  });
+
   it("prefills and updates an existing session in edit mode", async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: "5" });
     mockGetSession.mockResolvedValue({

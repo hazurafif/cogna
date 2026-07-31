@@ -50,10 +50,19 @@ export function NewSessionScreen() {
       return;
     }
 
+    const [y, m, d] = date.split("-").map(Number);
+    const started = new Date(y, m - 1, d, 0, 0, 0);
+    if (
+      started.getFullYear() !== y ||
+      started.getMonth() !== m - 1 ||
+      started.getDate() !== d
+    ) {
+      setError("Enter a valid date like 2026-07-31.");
+      return;
+    }
+
     setSaving(true);
     try {
-      const [y, m, d] = date.split("-").map(Number);
-      const started = new Date(y, m - 1, d, 0, 0, 0);
       const ended = new Date(started.getTime() + mins * 60_000);
       const payload = {
         subject_id: subjectId,
