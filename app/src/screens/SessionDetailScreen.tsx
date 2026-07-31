@@ -1,8 +1,13 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
+import { Button } from "../components/Button";
+import { Screen } from "../components/Screen";
+import { SubjectDot } from "../components/SubjectDot";
+import { colors } from "../theme/colors";
+import { fontSize, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
 
 export function SessionDetailScreen() {
@@ -42,55 +47,53 @@ export function SessionDetailScreen() {
 
   if (!session) {
     return (
-      <View style={styles.container}>
+      <Screen>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <Screen>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <View style={styles.subjectRow}>
-        <View style={[styles.dot, { backgroundColor: session.subject_color }]} />
-        <Text style={styles.subjectName}>{session.subject_name}</Text>
-      </View>
-      <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
-      <Text style={styles.meta}>
-        {session.started_at} → {session.ended_at}
-      </Text>
-      <Text style={styles.meta}>
-        {session.source} · {session.duration_minutes} minutes
-      </Text>
-      {session.note ? <Text style={styles.note}>{session.note}</Text> : null}
-      <Pressable style={styles.editButton} onPress={() => router.push(`/session/${session.id}/edit`)}>
-        <Text style={styles.editText}>Edit</Text>
-      </Pressable>
-      <Pressable style={styles.deleteButton} onPress={onDelete} disabled={deleting}>
-        <Text style={styles.deleteText}>{deleting ? "Deleting…" : "Delete"}</Text>
-      </Pressable>
-    </ScrollView>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.subjectRow}>
+          <SubjectDot color={session.subject_color} size={14} />
+          <Text style={styles.subjectName}>{session.subject_name}</Text>
+        </View>
+        <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
+        <Text style={styles.meta}>
+          {session.started_at} → {session.ended_at}
+        </Text>
+        <Text style={styles.meta}>
+          {session.source} · {session.duration_minutes} minutes
+        </Text>
+        {session.note ? <Text style={styles.note}>{session.note}</Text> : null}
+        <View style={styles.actions}>
+          <Button
+            title="Edit"
+            variant="outline"
+            onPress={() => router.push(`/session/${session.id}/edit`)}
+          />
+          <Button title="Delete" variant="danger" onPress={onDelete} loading={deleting} />
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  content: { gap: 12 },
-  subjectRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  subjectName: { fontSize: 18, fontWeight: "600" },
-  duration: { fontSize: 40, fontWeight: "700" },
-  meta: { fontSize: 14, color: "#6b7280" },
-  note: { fontSize: 15, marginTop: 8 },
-  editButton: {
-    marginTop: 24, borderWidth: 1, borderColor: "#4F46E5", borderRadius: 8,
-    padding: 12, alignItems: "center",
+  content: { gap: spacing.md },
+  subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  subjectName: { fontSize: fontSize.title, fontWeight: "600", color: colors.text },
+  duration: {
+    fontSize: 40,
+    fontWeight: "700",
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
   },
-  editText: { color: "#4F46E5", fontWeight: "600" },
-  deleteButton: {
-    marginTop: 12, borderWidth: 1, borderColor: "#dc2626", borderRadius: 8,
-    padding: 12, alignItems: "center",
-  },
-  deleteText: { color: "#dc2626", fontWeight: "600" },
-  error: { color: "#dc2626" },
+  meta: { fontSize: fontSize.caption, color: colors.textSecondary },
+  note: { fontSize: fontSize.body, color: colors.text, marginTop: spacing.sm },
+  actions: { gap: spacing.md, marginTop: spacing.xl },
+  error: { color: colors.danger, fontSize: fontSize.body },
 });

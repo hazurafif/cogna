@@ -96,16 +96,15 @@ describe("SessionDetailScreen", () => {
       new Promise<void>((resolve) => { resolveDelete = resolve; }),
     );
 
-    const { getByText } = await render(<SessionDetailScreen />);
+    const { getByText, getByTestId } = await render(<SessionDetailScreen />);
     await waitFor(() => expect(getByText("History")).toBeTruthy());
 
     const deleteButton = getByText("Delete");
     const firstPress = fireEvent.press(deleteButton);
     await waitFor(() => expect(mockDeleteSession).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(getByText("Deleting…")).toBeTruthy());
-    await waitFor(() => expect(deleteButton).toBeDisabled());
+    await waitFor(() => expect(getByTestId("button-loading")).toBeTruthy());
 
-    await fireEvent.press(deleteButton);
+    await fireEvent.press(getByTestId("button-loading"));
     expect(mockDeleteSession).toHaveBeenCalledTimes(1);
 
     resolveDelete();
