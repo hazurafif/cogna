@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession, getSession, updateSession } from "../api/sessions";
+import { Button } from "../components/Button";
+import { Chip } from "../components/Chip";
+import { Screen } from "../components/Screen";
+import { colors } from "../theme/colors";
+import { fontSize, radius, spacing } from "../theme/tokens";
 import { localISO, todayDate } from "../utils/time";
 
 export function NewSessionScreen() {
@@ -44,12 +49,6 @@ export function NewSessionScreen() {
       setError("Enter a valid date like 2026-07-31.");
       return;
     }
-    const mins = Number(minutes);
-    if (!Number.isInteger(mins) || mins <= 0) {
-      setError("Minutes must be a positive whole number.");
-      return;
-    }
-
     const [y, m, d] = date.split("-").map(Number);
     const started = new Date(y, m - 1, d, 0, 0, 0);
     if (
@@ -58,6 +57,11 @@ export function NewSessionScreen() {
       started.getDate() !== d
     ) {
       setError("Enter a valid date like 2026-07-31.");
+      return;
+    }
+    const mins = Number(minutes);
+    if (!Number.isInteger(mins) || mins <= 0) {
+      setError("Minutes must be a positive whole number.");
       return;
     }
 
@@ -84,68 +88,63 @@ export function NewSessionScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{isEdit ? "Edit session" : "Log a session"}</Text>
+    <Screen title={isEdit ? "Edit session" : "Log a session"}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <View style={styles.subjectRow}>
-        {subjects.map((s) => (
-          <Pressable
-            key={s.id}
-            onPress={() => setSubjectId(s.id)}
-            style={[styles.chip, subjectId === s.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, subjectId === s.id && styles.chipTextActive]}>
-              {s.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <TextInput
-        style={styles.input}
-        placeholder="Date (YYYY-MM-DD)"
-        value={date}
-        onChangeText={setDate}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Minutes"
-        value={minutes}
-        onChangeText={setMinutes}
-        keyboardType="number-pad"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Note (optional)"
-        value={note}
-        onChangeText={setNote}
-      />
-      <Pressable
-        style={[styles.button, subjectId === null && styles.buttonDisabled]}
-        onPress={onSave}
-        disabled={subjectId === null || saving}
-      >
-        <Text style={styles.buttonText}>{saving ? "Saving…" : "Save session"}</Text>
-      </Pressable>
-    </ScrollView>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.subjectRow}>
+          {subjects.map((s) => (
+            <Chip
+              key={s.id}
+              label={s.name}
+              selected={subjectId === s.id}
+              onPress={() => setSubjectId(s.id)}
+            />
+          ))}
+        </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Date (YYYY-MM-DD)"
+          placeholderTextColor={colors.textMuted}
+          value={date}
+          onChangeText={setDate}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Minutes"
+          placeholderTextColor={colors.textMuted}
+          value={minutes}
+          onChangeText={setMinutes}
+          keyboardType="number-pad"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Note (optional)"
+          placeholderTextColor={colors.textMuted}
+          value={note}
+          onChangeText={setNote}
+        />
+        <Button
+          title="Save session"
+          onPress={onSave}
+          disabled={subjectId === null}
+          loading={saving}
+        />
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, gap: 12 },
-  title: { fontSize: 24, fontWeight: "700" },
-  subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderWidth: 1, borderColor: "#d1d5db", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+  content: { gap: spacing.md, paddingBottom: spacing.xl },
+  subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  input: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    fontSize: fontSize.body,
+    color: colors.text,
   },
-  chipActive: { backgroundColor: "#4F46E5", borderColor: "#4F46E5" },
-  chipText: { fontSize: 14 },
-  chipTextActive: { color: "#fff" },
-  input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 8, padding: 12, fontSize: 16 },
-  button: {
-    backgroundColor: "#4F46E5", borderRadius: 8, padding: 14, alignItems: "center",
-  },
-  buttonDisabled: { backgroundColor: "#a5b4fc" },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  error: { color: "#dc2626" },
+  error: { color: colors.danger, fontSize: fontSize.body },
 });
