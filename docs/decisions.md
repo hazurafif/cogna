@@ -54,4 +54,4 @@ decisions as they are made; never rewrite history.
   vars.
 - **@expo/vector-icons explicit dependency** — Expo SDK 57's `expo` package no longer bundles
   `@expo/vector-icons` (the dark-ui plan assumed it was bundled). It is an explicit dependency
-  (`expo install @expo/vector-icons@^15.0.2`), used for Ionicons in the shared components.
+  (`expo install @expo/vector-icons@^15.1.1`), used for Ionicons in the shared components.

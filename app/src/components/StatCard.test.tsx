@@ -1,6 +1,7 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
 import { StatCard } from "./StatCard";
+import { colors } from "../theme/colors";
 
 describe("StatCard", () => {
   it("renders value and label", async () => {
@@ -15,6 +16,11 @@ describe("StatCard", () => {
     const { getByTestId } = await render(
       <StatCard icon="flame-outline" value="6 days" label="STREAK" highlighted />,
     );
-    expect(getByTestId("stat-card")).toBeTruthy();
+    const card = getByTestId("stat-card");
+    expect(card.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ backgroundColor: colors.primary }),
+      ]),
+    );
   });
 });
