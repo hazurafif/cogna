@@ -1,7 +1,11 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, router } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "../components/Button";
+import { Screen } from "../components/Screen";
+import { colors } from "../theme/colors";
+import { fontSize, radius, spacing } from "../theme/tokens";
 
 export function LoginScreen() {
   const { login } = useAuth();
@@ -24,53 +28,57 @@ export function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Cogna</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        testID="email-input"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        testID="password-input"
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.button} onPress={onSubmit} disabled={submitting}>
-        <Text style={styles.buttonText}>Log in</Text>
-      </Pressable>
-      <Link href="/register" style={styles.link}>
-        <Text>No account? Register</Text>
-      </Link>
-    </View>
+    <Screen>
+      <View style={styles.center}>
+        <Text style={styles.title}>Cogna</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={colors.textMuted}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          testID="email-input"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={colors.textMuted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          testID="password-input"
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Button title="Log in" onPress={onSubmit} loading={submitting} />
+        <Link href="/register" style={styles.link}>
+          <Text style={styles.linkText}>No account? Register</Text>
+        </Link>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
-  title: { fontSize: 32, fontWeight: "700", textAlign: "center", marginBottom: 24 },
+  center: { flex: 1, justifyContent: "center", gap: spacing.md },
+  title: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: colors.text,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+  },
   input: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    fontSize: fontSize.body,
+    color: colors.text,
   },
-  button: {
-    backgroundColor: "#4F46E5",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  error: { color: "#dc2626" },
-  link: { alignItems: "center", marginTop: 8 },
+  error: { color: colors.danger, fontSize: fontSize.body },
+  link: { alignItems: "center", marginTop: spacing.sm },
+  linkText: { color: colors.textSecondary, fontSize: fontSize.body },
 });
