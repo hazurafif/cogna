@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 
 	"cogna/backend/internal/store"
 )
@@ -12,6 +13,13 @@ import (
 // NewRouter returns the HTTP handler for the cogna API.
 func NewRouter(st *store.Store, secret string) http.Handler {
 	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 	auth := &authHandlers{st: st, secret: secret}
 	subjects := &subjectHandlers{st: st}
 	sessions := &sessionHandlers{st: st}
