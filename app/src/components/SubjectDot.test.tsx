@@ -6,8 +6,6 @@ describe("SubjectDot", () => {
   it("renders a colored dot", async () => {
     const { getByTestId } = await render(<SubjectDot color="#22C55E" />);
     const dot = getByTestId("subject-dot");
-    expect(dot.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({ backgroundColor: "#22C55E" })]),
-    );
+    expect(dot.props.style).toEqual({ backgroundColor: "#22C55E", width: 10, height: 10, borderRadius: 5 });
   });
 });

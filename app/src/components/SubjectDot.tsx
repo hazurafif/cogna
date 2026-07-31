@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 
 type SubjectDotProps = {
   color: string;
@@ -10,11 +10,7 @@ export function SubjectDot({ color, size = 10 }: SubjectDotProps) {
   return (
     <View
       testID="subject-dot"
-      style={[styles.dot, { backgroundColor: color, width: size, height: size, borderRadius: size / 2 }]}
+      style={{ backgroundColor: color, width: size, height: size, borderRadius: size / 2 }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  dot: {},
-});

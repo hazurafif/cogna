@@ -128,6 +128,7 @@ export function NewSessionScreen() {
           onPress={onSave}
           disabled={subjectId === null}
           loading={saving}
+          testID="save-button"
         />
       </ScrollView>
     </Screen>

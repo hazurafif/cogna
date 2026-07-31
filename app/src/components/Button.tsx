@@ -40,7 +40,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           testID="button-loading"
-          color={variant === "outline" ? colors.primary : "#fff"}
+          color={variant === "outline" ? colors.primary : colors.white}
         />
       ) : (
         <Text style={[styles.label, variant === "outline" && styles.outlineLabel]}>{title}</Text>
@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   blocked: { opacity: 0.5 },
-  label: { color: "#fff", fontSize: fontSize.title, fontWeight: "600" },
+  label: { color: colors.white, fontSize: fontSize.title, fontWeight: "600" },
   outlineLabel: { color: colors.text },
 });

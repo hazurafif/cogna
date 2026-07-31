@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
@@ -37,7 +37,9 @@ export function HomeScreen() {
     <Screen>
       <View style={styles.topRow}>
         <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
-        <Ionicons name="sync-outline" size={20} color={colors.textMuted} />
+        <Pressable onPress={refresh} testID="refresh-button" hitSlop={8}>
+          <Ionicons name="sync-outline" size={20} color={colors.textMuted} />
+        </Pressable>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {summary ? (
@@ -55,12 +57,12 @@ export function HomeScreen() {
               <Text style={styles.subjectMinutes}>{formatMinutes(s.minutes)}</Text>
             </View>
           ))}
-          <View style={styles.logoutRow}>
-            <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
-            <Button title="Log out" variant="outline" onPress={() => logout()} testID="logout-button" />
-          </View>
         </>
       ) : null}
+      <View style={styles.logoutRow}>
+        <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
+        <Button title="Log out" variant="outline" onPress={() => logout()} testID="logout-button" />
+      </View>
     </Screen>
   );
 }

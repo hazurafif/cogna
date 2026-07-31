@@ -74,8 +74,15 @@ export function SessionDetailScreen() {
             title="Edit"
             variant="outline"
             onPress={() => router.push(`/session/${session.id}/edit`)}
+            testID="edit-button"
           />
-          <Button title="Delete" variant="danger" onPress={onDelete} loading={deleting} />
+          <Button
+            title="Delete"
+            variant="danger"
+            onPress={onDelete}
+            loading={deleting}
+            testID="delete-button"
+          />
         </View>
       </ScrollView>
     </Screen>

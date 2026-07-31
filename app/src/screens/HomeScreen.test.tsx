@@ -62,4 +62,31 @@ describe("HomeScreen", () => {
 
     expect(mockLogout).toHaveBeenCalled();
   });
+
+  it("shows logout even when stats fail to load", async () => {
+    mockFetchSummary.mockRejectedValue(new Error("boom"));
+
+    const { getByTestId } = await render(<HomeScreen />);
+
+    await waitFor(() => expect(getByTestId("logout-button")).toBeTruthy());
+    await fireEvent.press(getByTestId("logout-button"));
+
+    expect(mockLogout).toHaveBeenCalled();
+  });
+
+  it("refreshes stats when the refresh button is pressed", async () => {
+    mockFetchSummary.mockResolvedValue({
+      total_minutes: 0,
+      week_minutes: 0,
+      streak_days: 0,
+      per_subject: [],
+    });
+
+    const { getByTestId } = await render(<HomeScreen />);
+
+    await waitFor(() => expect(getByTestId("refresh-button")).toBeTruthy());
+    await fireEvent.press(getByTestId("refresh-button"));
+
+    expect(mockFetchSummary).toHaveBeenCalledTimes(2);
+  });
 });
