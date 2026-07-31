@@ -1,14 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { HistoryScreen } from "../../screens/HistoryScreen";
 
-export default function HistoryScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>History — coming soon</Text>
-    </View>
-  );
+export default function HistoryRoute() {
+  return <HistoryScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-});
