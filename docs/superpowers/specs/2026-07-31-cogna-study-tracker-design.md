@@ -67,7 +67,7 @@ All routes under `/api/v1`, JSON bodies, JWT bearer auth except auth endpoints.
 - `GET /subjects` — list current user's subjects
 - `POST /subjects` — create (name, color)
 - `PUT /subjects/:id` — update (name, color)
-- `DELETE /subjects/:id` — delete
+- `DELETE /subjects/:id` — delete; returns 409 if sessions reference the subject (user must delete/reassign those sessions first)
 
 ### Sessions
 - `GET /sessions?from=&to=&subject_id=` — list with optional date/subject filters, ordered by started_at desc
