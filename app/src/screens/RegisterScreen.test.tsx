@@ -1,7 +1,7 @@
 import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import { LoginScreen } from "./LoginScreen";
+import { RegisterScreen } from "./RegisterScreen";
 import { useAuth } from "../auth/AuthContext";
 
 jest.mock("../auth/AuthContext", () => ({
@@ -19,43 +19,43 @@ jest.mock("expo-router", () => {
 const mockUseAuth = useAuth as jest.Mock;
 const mockReplace = router.replace as jest.Mock;
 
-describe("LoginScreen", () => {
+describe("RegisterScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({
-      login: jest.fn().mockResolvedValue(undefined),
+      register: jest.fn().mockResolvedValue(undefined),
       loading: false,
     });
   });
 
   it("submits email and password", async () => {
-    const { getByPlaceholderText, getByText } = await render(<LoginScreen />);
+    const { getByPlaceholderText, getByText } = await render(<RegisterScreen />);
 
     await fireEvent.changeText(getByPlaceholderText("Email"), "  me@example.com  ");
-    await fireEvent.changeText(getByPlaceholderText("Password"), "password123");
-    await fireEvent.press(getByText("Log in"));
+    await fireEvent.changeText(getByPlaceholderText("Password (min 8 characters)"), "password123");
+    await fireEvent.press(getByText("Register"));
 
     await waitFor(() => {
-      expect(mockUseAuth().login).toHaveBeenCalledWith("me@example.com", "password123");
+      expect(mockUseAuth().register).toHaveBeenCalledWith("me@example.com", "password123");
     });
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
     });
   });
 
-  it("shows an error when login fails", async () => {
+  it("shows an error when registration fails", async () => {
     mockUseAuth.mockReturnValue({
-      login: jest.fn().mockRejectedValue(new Error("invalid_credentials")),
+      register: jest.fn().mockRejectedValue(new Error("email_taken")),
       loading: false,
     });
-    const { getByPlaceholderText, getByText } = await render(<LoginScreen />);
+    const { getByPlaceholderText, getByText } = await render(<RegisterScreen />);
 
     await fireEvent.changeText(getByPlaceholderText("Email"), "me@example.com");
-    await fireEvent.changeText(getByPlaceholderText("Password"), "wrong");
-    await fireEvent.press(getByText("Log in"));
+    await fireEvent.changeText(getByPlaceholderText("Password (min 8 characters)"), "password123");
+    await fireEvent.press(getByText("Register"));
 
     await waitFor(() => {
-      expect(getByText(/could not log in/i)).toBeTruthy();
+      expect(getByText(/could not register/i)).toBeTruthy();
     });
   });
 });
