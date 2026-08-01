@@ -9,7 +9,7 @@ import (
 type SubjectTot struct {
 	SubjectID int64  `json:"subject_id"`
 	Name      string `json:"name"`
-	Color     string `json:"color"`
+	Icon      string `json:"icon"`
 	Minutes   int64  `json:"minutes"`
 }
 
@@ -44,10 +44,10 @@ func (s *Store) Summary(userID int64, now time.Time) (*Summary, error) {
 	}
 
 	rows, err := s.db.Query(
-		`SELECT sub.id, sub.name, sub.color, SUM(sess.duration_minutes)
+		`SELECT sub.id, sub.name, sub.icon, SUM(sess.duration_minutes)
 		 FROM sessions sess JOIN subjects sub ON sub.id = sess.subject_id
 		 WHERE sess.user_id = ?
-		 GROUP BY sub.id, sub.name, sub.color
+		 GROUP BY sub.id, sub.name, sub.icon
 		 ORDER BY SUM(sess.duration_minutes) DESC, sub.id ASC`,
 		userID,
 	)
@@ -57,7 +57,7 @@ func (s *Store) Summary(userID int64, now time.Time) (*Summary, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var tot SubjectTot
-		if err := rows.Scan(&tot.SubjectID, &tot.Name, &tot.Color, &tot.Minutes); err != nil {
+		if err := rows.Scan(&tot.SubjectID, &tot.Name, &tot.Icon, &tot.Minutes); err != nil {
 			return nil, fmt.Errorf("scan subject total: %w", err)
 		}
 		sum.PerSubject = append(sum.PerSubject, tot)

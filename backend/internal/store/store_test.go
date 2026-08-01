@@ -148,8 +148,8 @@ func TestMigrateIdempotentAcrossFileReopen(t *testing.T) {
 	if err := s2.db.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&n); err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	if n != 1 {
-		t.Fatalf("migrations recorded = %d, want 1", n)
+	if n != 2 {
+		t.Fatalf("migrations recorded = %d, want 2", n)
 	}
 }
 
@@ -173,5 +173,79 @@ func TestMigrateWithMissingMigrationsDir(t *testing.T) {
 	s := &Store{db: db}
 	if err := s.migrateWith(fstest.MapFS{}); err == nil {
 		t.Fatal("expected error for missing migrations dir")
+	}
+}
+
+func TestMigrateUpgradesPreIconDatabase(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "cogna.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open raw db: %v", err)
+	}
+	legacy := `CREATE TABLE users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	);
+	CREATE TABLE subjects (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL REFERENCES users(id),
+		name TEXT NOT NULL,
+		color TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	);
+	CREATE TABLE sessions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL REFERENCES users(id),
+		subject_id INTEGER NOT NULL REFERENCES subjects(id),
+		started_at TEXT NOT NULL,
+		ended_at TEXT NOT NULL,
+		duration_minutes INTEGER NOT NULL,
+		source TEXT NOT NULL CHECK (source IN ('timer', 'manual')),
+		note TEXT,
+		created_at TEXT NOT NULL
+	);
+	CREATE TABLE schema_migrations (version TEXT PRIMARY KEY);
+	INSERT INTO schema_migrations (version) VALUES ('0001_init.sql');`
+	if _, err := db.Exec(legacy); err != nil {
+		t.Fatalf("seed legacy schema: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO users (email, password_hash, created_at) VALUES ('legacy@example.com', 'hash', '2026-07-01T00:00:00')`); err != nil {
+		t.Fatalf("seed user: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO subjects (user_id, name, color, created_at) VALUES (1, 'Old Math', '#4F46E5', '2026-07-01T00:00:00')`); err != nil {
+		t.Fatalf("seed subject: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO sessions (user_id, subject_id, started_at, ended_at, duration_minutes, source, created_at)
+		 VALUES (1, 1, '2026-07-30T09:00:00', '2026-07-30T10:00:00', 60, 'timer', '2026-07-30T10:00:00')`); err != nil {
+		t.Fatalf("seed session: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close raw db: %v", err)
+	}
+
+	s, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer s.Close()
+
+	subs, err := s.ListSubjects(1)
+	if err != nil {
+		t.Fatalf("list subjects: %v", err)
+	}
+	if len(subs) != 1 || subs[0].Name != "Old Math" || subs[0].Icon != "book-open" {
+		t.Fatalf("subjects = %+v, want legacy row with default icon", subs)
+	}
+	sess, err := s.ListSessions(1, "", "", 0)
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	if len(sess) != 1 || sess[0].SubjectName != "Old Math" || sess[0].SubjectIcon != "book-open" {
+		t.Fatalf("sessions = %+v, want joined legacy subject", sess)
 	}
 }

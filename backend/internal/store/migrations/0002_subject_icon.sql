@@ -1,0 +1,2 @@
+ALTER TABLE subjects ADD COLUMN icon TEXT NOT NULL DEFAULT 'book-open';
+ALTER TABLE subjects DROP COLUMN color;

@@ -14,11 +14,11 @@ type subjectHandlers struct {
 }
 
 type subjectPayload struct {
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
-var colorPattern = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+var iconPattern = regexp.MustCompile(`^[a-z0-9-]{1,40}$`)
 
 func (h *subjectHandlers) validate(w http.ResponseWriter, p *subjectPayload) bool {
 	p.Name = strings.TrimSpace(p.Name)
@@ -26,8 +26,8 @@ func (h *subjectHandlers) validate(w http.ResponseWriter, p *subjectPayload) boo
 		writeError(w, http.StatusBadRequest, "invalid_name", "name must be 1-60 characters")
 		return false
 	}
-	if !colorPattern.MatchString(p.Color) {
-		writeError(w, http.StatusBadRequest, "invalid_color", "color must be a hex value like #4F46E5")
+	if !iconPattern.MatchString(p.Icon) {
+		writeError(w, http.StatusBadRequest, "invalid_icon", "icon must be a kebab-case name like book-open")
 		return false
 	}
 	return true
@@ -50,7 +50,7 @@ func (h *subjectHandlers) create(w http.ResponseWriter, r *http.Request) {
 	if !h.validate(w, &p) {
 		return
 	}
-	sub, err := h.st.CreateSubject(userIDFrom(r), p.Name, p.Color)
+	sub, err := h.st.CreateSubject(userIDFrom(r), p.Name, p.Icon)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not create subject")
 		return
@@ -71,7 +71,7 @@ func (h *subjectHandlers) update(w http.ResponseWriter, r *http.Request) {
 	if !h.validate(w, &p) {
 		return
 	}
-	sub, err := h.st.UpdateSubject(userIDFrom(r), id, p.Name, p.Color)
+	sub, err := h.st.UpdateSubject(userIDFrom(r), id, p.Name, p.Icon)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "subject not found")

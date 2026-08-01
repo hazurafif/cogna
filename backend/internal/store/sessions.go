@@ -14,7 +14,7 @@ type Session struct {
 	UserID          int64   `json:"user_id"`
 	SubjectID       int64   `json:"subject_id"`
 	SubjectName     string  `json:"subject_name"`
-	SubjectColor    string  `json:"subject_color"`
+	SubjectIcon     string  `json:"subject_icon"`
 	StartedAt       string  `json:"started_at"`
 	EndedAt         string  `json:"ended_at"`
 	DurationMinutes int64   `json:"duration_minutes"`
@@ -97,13 +97,13 @@ func (s *Store) CreateSession(userID, subjectID int64, startedAt, endedAt, sourc
 	return sess, nil
 }
 
-const sessionColumns = `s.id, s.user_id, s.subject_id, sub.name, sub.color,
+const sessionColumns = `s.id, s.user_id, s.subject_id, sub.name, sub.icon,
 	s.started_at, s.ended_at, s.duration_minutes, s.source, s.note, s.created_at`
 
 func (s *Store) scanSession(row interface{ Scan(...any) error }) (*Session, error) {
 	var sess Session
 	err := row.Scan(&sess.ID, &sess.UserID, &sess.SubjectID, &sess.SubjectName,
-		&sess.SubjectColor, &sess.StartedAt, &sess.EndedAt, &sess.DurationMinutes,
+		&sess.SubjectIcon, &sess.StartedAt, &sess.EndedAt, &sess.DurationMinutes,
 		&sess.Source, &sess.Note, &sess.CreatedAt)
 	if err != nil {
 		return nil, err

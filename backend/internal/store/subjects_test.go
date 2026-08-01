@@ -28,11 +28,11 @@ func TestCreateAndListSubjects(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "sub@example.com")
 
-	got, err := s.CreateSubject(userID, "Math", "#4F46E5")
+	got, err := s.CreateSubject(userID, "Math", "book-open")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	if got.Name != "Math" || got.Color != "#4F46E5" {
+	if got.Name != "Math" || got.Icon != "book-open" {
 		t.Fatalf("got %+v", got)
 	}
 	if got.ID == 0 {
@@ -53,7 +53,7 @@ func TestListSubjectsScopedToUser(t *testing.T) {
 	userA := mustUser(t, s, "a@example.com")
 	userB := mustUser(t, s, "b@example.com")
 
-	if _, err := s.CreateSubject(userA, "A-only", "#111111"); err != nil {
+	if _, err := s.CreateSubject(userA, "A-only", "calculator"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 
@@ -70,19 +70,19 @@ func TestUpdateSubject(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "up@example.com")
 
-	sub, err := s.CreateSubject(userID, "Old", "#000000")
+	sub, err := s.CreateSubject(userID, "Old", "book-open")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	got, err := s.UpdateSubject(userID, sub.ID, "New", "#FFFFFF")
+	got, err := s.UpdateSubject(userID, sub.ID, "New", "atom")
 	if err != nil {
 		t.Fatalf("update: %v", err)
 	}
-	if got.Name != "New" || got.Color != "#FFFFFF" {
+	if got.Name != "New" || got.Icon != "atom" {
 		t.Fatalf("got %+v", got)
 	}
 
-	if _, err := s.UpdateSubject(userID+1, sub.ID, "X", "#000000"); !errors.Is(err, ErrNotFound) {
+	if _, err := s.UpdateSubject(userID+1, sub.ID, "X", "atom"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("other user's subject: err = %v, want ErrNotFound", err)
 	}
 }
@@ -91,7 +91,7 @@ func TestDeleteSubject(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "del@example.com")
 
-	sub, err := s.CreateSubject(userID, "Doomed", "#000000")
+	sub, err := s.CreateSubject(userID, "Doomed", "book-open")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestDeleteSubjectInUse(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "busy@example.com")
 
-	sub, err := s.CreateSubject(userID, "Busy", "#000000")
+	sub, err := s.CreateSubject(userID, "Busy", "book-open")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}

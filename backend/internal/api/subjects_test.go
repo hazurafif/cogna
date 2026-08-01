@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-func createSubject(t *testing.T, ts *httptest.Server, token, name, color string) int64 {
+func createSubject(t *testing.T, ts *httptest.Server, token, name, icon string) int64 {
 	t.Helper()
-	body := bytes.NewBufferString(`{"name":"` + name + `","color":"` + color + `"}`)
+	body := bytes.NewBufferString(`{"name":"` + name + `","icon":"` + icon + `"}`)
 	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/subjects", body)
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
@@ -36,7 +36,7 @@ func TestSubjectCRUD(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "subs@example.com", "password123")
 
-	id := createSubject(t, ts, token, "Math", "#4F46E5")
+	id := createSubject(t, ts, token, "Math", "book-open")
 
 	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/api/v1/subjects", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -46,19 +46,19 @@ func TestSubjectCRUD(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	var subs []struct {
-		ID    int64  `json:"id"`
-		Name  string `json:"name"`
-		Color string `json:"color"`
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+		Icon string `json:"icon"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&subs); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(subs) != 1 || subs[0].ID != id || subs[0].Name != "Math" {
+	if len(subs) != 1 || subs[0].ID != id || subs[0].Name != "Math" || subs[0].Icon != "book-open" {
 		t.Fatalf("got %+v", subs)
 	}
 
 	req, _ = http.NewRequest(http.MethodPut, ts.URL+"/api/v1/subjects/"+strconvFormatInt(id),
-		strings.NewReader(`{"name":"Calculus","color":"#10B981"}`))
+		strings.NewReader(`{"name":"Calculus","icon":"calculator"}`))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err = http.DefaultClient.Do(req)
@@ -87,8 +87,9 @@ func TestSubjectValidation(t *testing.T) {
 	token := registerUser(t, ts, "val@example.com", "password123")
 
 	for _, payload := range []string{
-		`{"name":"","color":"#4F46E5"}`,
-		`{"name":"Math","color":"red"}`,
+		`{"name":"","icon":"book-open"}`,
+		`{"name":"Math","icon":"NOT-VALID!"}`,
+		`{"name":"Math","icon":""}`,
 	} {
 		req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/subjects",
 			strings.NewReader(payload))
@@ -110,10 +111,10 @@ func TestSubjectScopedToUser(t *testing.T) {
 	tokenA := registerUser(t, ts, "scop-a@example.com", "password123")
 	tokenB := registerUser(t, ts, "scop-b@example.com", "password123")
 
-	id := createSubject(t, ts, tokenA, "Mine", "#000000")
+	id := createSubject(t, ts, tokenA, "Mine", "book-open")
 
 	req, _ := http.NewRequest(http.MethodPut, ts.URL+"/api/v1/subjects/"+strconvFormatInt(id),
-		strings.NewReader(`{"name":"Hacked","color":"#000000"}`))
+		strings.NewReader(`{"name":"Hacked","icon":"book-open"}`))
 	req.Header.Set("Authorization", "Bearer "+tokenB)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)

@@ -7,7 +7,7 @@ import (
 
 func mustSubject(t *testing.T, s *Store, userID int64, name string) int64 {
 	t.Helper()
-	sub, err := s.CreateSubject(userID, name, "#4F46E5")
+	sub, err := s.CreateSubject(userID, name, "book-open")
 	if err != nil {
 		t.Fatalf("create subject: %v", err)
 	}
