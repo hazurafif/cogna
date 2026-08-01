@@ -37,9 +37,9 @@ func NewRouter(st *store.Store, secret string) http.Handler {
 		r.Get("/api/v1/me", auth.me)
 		r.Route("/api/v1/subjects", func(r chi.Router) {
 			r.Get("/", subjects.list)
-			r.Post("/", subjects.create)
-			r.Put("/{id}", subjects.update)
-			r.Delete("/{id}", subjects.delete)
+			r.Post("/", subjects.notFound)
+			r.Put("/{id}", subjects.notFound)
+			r.Delete("/{id}", subjects.notFound)
 		})
 		r.Route("/api/v1/sessions", func(r chi.Router) {
 			r.Get("/", sessions.list)

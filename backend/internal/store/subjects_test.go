@@ -1,8 +1,13 @@
 package store
 
 import (
+	"database/sql"
 	"errors"
+	"io/fs"
 	"testing"
+	"testing/fstest"
+
+	_ "modernc.org/sqlite"
 )
 
 func newTestStore(t *testing.T) *Store {
@@ -24,98 +29,178 @@ func mustUser(t *testing.T, s *Store, email string) int64 {
 	return u.ID
 }
 
-func TestCreateAndListSubjects(t *testing.T) {
-	s := newTestStore(t)
-	userID := mustUser(t, s, "sub@example.com")
-
-	got, err := s.CreateSubject(userID, "Math", "book-open")
+func mustCatalogSubject(t *testing.T, s *Store, name string) int64 {
+	t.Helper()
+	subs, err := s.ListSubjects()
 	if err != nil {
-		t.Fatalf("create: %v", err)
+		t.Fatalf("list subjects: %v", err)
 	}
-	if got.Name != "Math" || got.Icon != "book-open" {
-		t.Fatalf("got %+v", got)
+	for _, sub := range subs {
+		if sub.Name == name {
+			return sub.ID
+		}
 	}
-	if got.ID == 0 {
-		t.Fatal("expected non-zero id")
-	}
+	t.Fatalf("catalog has no subject %q", name)
+	return 0
+}
 
-	subs, err := s.ListSubjects(userID)
+func TestListCatalog(t *testing.T) {
+	s := newTestStore(t)
+
+	subs, err := s.ListSubjects()
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(subs) != 1 || subs[0].Name != "Math" {
-		t.Fatalf("got %+v", subs)
+	if len(subs) != 11 {
+		t.Fatalf("catalog size = %d, want 11", len(subs))
+	}
+	names := map[string]bool{}
+	for _, sub := range subs {
+		names[sub.Name] = true
+		if sub.Icon == "" {
+			t.Fatalf("subject %q has no icon", sub.Name)
+		}
+	}
+	for _, want := range []string{"math", "science", "language", "programming",
+		"reading", "writing", "history", "music", "art", "test-prep", "other"} {
+		if !names[want] {
+			t.Fatalf("catalog missing %q, got %v", want, names)
+		}
 	}
 }
 
-func TestListSubjectsScopedToUser(t *testing.T) {
+func TestListCatalogIdenticalForAllUsers(t *testing.T) {
 	s := newTestStore(t)
-	userA := mustUser(t, s, "a@example.com")
-	userB := mustUser(t, s, "b@example.com")
+	_ = mustUser(t, s, "a@example.com")
+	_ = mustUser(t, s, "b@example.com")
 
-	if _, err := s.CreateSubject(userA, "A-only", "calculator"); err != nil {
-		t.Fatalf("create: %v", err)
-	}
-
-	subs, err := s.ListSubjects(userB)
+	subsA, err := s.ListSubjects()
 	if err != nil {
-		t.Fatalf("list: %v", err)
+		t.Fatalf("list A: %v", err)
 	}
-	if len(subs) != 0 {
-		t.Fatalf("user B sees %d subjects, want 0", len(subs))
+	subsB, err := s.ListSubjects()
+	if err != nil {
+		t.Fatalf("list B: %v", err)
+	}
+	if len(subsA) != len(subsB) {
+		t.Fatalf("different catalog sizes: %d vs %d", len(subsA), len(subsB))
+	}
+	for i := range subsA {
+		if subsA[i] != subsB[i] {
+			t.Fatalf("catalogs differ at %d: %+v vs %+v", i, subsA[i], subsB[i])
+		}
 	}
 }
 
-func TestUpdateSubject(t *testing.T) {
+func TestSubjectByID(t *testing.T) {
 	s := newTestStore(t)
-	userID := mustUser(t, s, "up@example.com")
+	mathID := mustCatalogSubject(t, s, "math")
+	otherID := mustCatalogSubject(t, s, "other")
 
-	sub, err := s.CreateSubject(userID, "Old", "book-open")
+	got, err := s.SubjectByID(mathID)
 	if err != nil {
-		t.Fatalf("create: %v", err)
+		t.Fatalf("get: %v", err)
 	}
-	got, err := s.UpdateSubject(userID, sub.ID, "New", "atom")
-	if err != nil {
-		t.Fatalf("update: %v", err)
-	}
-	if got.Name != "New" || got.Icon != "atom" {
+	if got.Name != "math" {
 		t.Fatalf("got %+v", got)
 	}
-
-	if _, err := s.UpdateSubject(userID+1, sub.ID, "X", "atom"); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("other user's subject: err = %v, want ErrNotFound", err)
+	if _, err := s.SubjectByID(otherID); err != nil {
+		t.Fatalf("get other: %v", err)
+	}
+	if _, err := s.SubjectByID(9999); !errors.Is(err, ErrSubjectNotFound) {
+		t.Fatalf("err = %v, want ErrSubjectNotFound", err)
 	}
 }
 
-func TestDeleteSubject(t *testing.T) {
-	s := newTestStore(t)
-	userID := mustUser(t, s, "del@example.com")
-
-	sub, err := s.CreateSubject(userID, "Doomed", "book-open")
+func mustReadMigration(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := fs.ReadFile(migrationsFS, path)
 	if err != nil {
-		t.Fatalf("create: %v", err)
+		t.Fatalf("read %s: %v", path, err)
 	}
-	if err := s.DeleteSubject(userID, sub.ID); err != nil {
-		t.Fatalf("delete: %v", err)
-	}
-	if err := s.DeleteSubject(userID, sub.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("second delete: err = %v, want ErrNotFound", err)
-	}
+	return data
 }
 
-func TestDeleteSubjectInUse(t *testing.T) {
-	s := newTestStore(t)
-	userID := mustUser(t, s, "busy@example.com")
-
-	sub, err := s.CreateSubject(userID, "Busy", "book-open")
+func TestSubjectCatalogMigrationMapsLegacySubjects(t *testing.T) {
+	db, err := sql.Open("sqlite", "file:legacymap?mode=memory&cache=shared")
 	if err != nil {
-		t.Fatalf("create: %v", err)
+		t.Fatalf("open: %v", err)
 	}
-	if _, err := s.CreateSession(userID, sub.ID, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "manual", nil); err != nil {
-		t.Fatalf("create session: %v", err)
+	defer db.Close()
+	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA foreign_keys = ON`); err != nil {
+		t.Fatalf("enable fk: %v", err)
 	}
 
-	if err := s.DeleteSubject(userID, sub.ID); !errors.Is(err, ErrSubjectInUse) {
-		t.Fatalf("err = %v, want ErrSubjectInUse", err)
+	// Apply only 0001 and 0002, then seed legacy per-user subjects.
+	st := &Store{db: db}
+	pre := fstest.MapFS{
+		"migrations/0001_init.sql":        {Data: mustReadMigration(t, "migrations/0001_init.sql")},
+		"migrations/0002_subject_icon.sql": {Data: mustReadMigration(t, "migrations/0002_subject_icon.sql")},
+	}
+	if err := st.migrateWith(pre); err != nil {
+		t.Fatalf("migrate pre: %v", err)
+	}
+
+	userID := mustUser(t, st, "mig@example.com")
+	if _, err := db.Exec(
+		`INSERT INTO subjects (user_id, name, icon, created_at) VALUES
+		 (?, 'Math', 'book-open', '2026-07-01T00:00:00'),
+		 (?, 'Interview Prep', 'briefcase', '2026-07-01T00:00:00')`,
+		userID, userID,
+	); err != nil {
+		t.Fatalf("seed subjects: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO sessions (user_id, subject_id, started_at, ended_at, duration_minutes, source, created_at) VALUES
+		 (?, 1, '2026-07-30T09:00:00', '2026-07-30T10:00:00', 60, 'timer', '2026-07-30T10:00:00'),
+		 (?, 2, '2026-07-31T09:00:00', '2026-07-31T10:30:00', 90, 'manual', '2026-07-31T10:30:00')`,
+		userID, userID,
+	); err != nil {
+		t.Fatalf("seed sessions: %v", err)
+	}
+
+	// Apply the remaining migrations (0003) and verify mapping.
+	if err := st.migrateWith(migrationsFS); err != nil {
+		t.Fatalf("migrate 0003: %v", err)
+	}
+
+	mathID := mustCatalogSubject(t, st, "math")
+	otherID := mustCatalogSubject(t, st, "other")
+
+	sess, err := st.ListSessions(userID, "", "", 0)
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	if len(sess) != 2 {
+		t.Fatalf("got %d sessions, want 2", len(sess))
+	}
+	bySubject := map[int64]string{}
+	for _, s := range sess {
+		bySubject[s.SubjectID] = s.SubjectName
+	}
+	if bySubject[mathID] != "math" {
+		t.Fatalf("Math session not mapped to catalog: %+v", bySubject)
+	}
+	if bySubject[otherID] != "other" {
+		t.Fatalf("unmatched session not mapped to other: %+v", bySubject)
+	}
+
+	// The legacy subjects table is gone and the catalog is queryable.
+	var legacyTable int
+	if err := db.QueryRow(
+		`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='subjects'`,
+	).Scan(&legacyTable); err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if legacyTable != 0 {
+		t.Fatal("legacy subjects table still exists")
+	}
+	subs, err := st.ListSubjects()
+	if err != nil {
+		t.Fatalf("list catalog: %v", err)
+	}
+	if len(subs) != 11 {
+		t.Fatalf("catalog size = %d, want 11", len(subs))
 	}
 }

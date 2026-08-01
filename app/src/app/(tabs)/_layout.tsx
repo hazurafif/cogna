@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { House, Timer, ClockArrowUp, Tags } from "lucide-react-native";
+import { House, CircleDot, CircleUser } from "lucide-react-native";
 import { colors } from "../../theme/colors";
 
 export default function TabsLayout() {
@@ -25,16 +25,12 @@ export default function TabsLayout() {
         options={{ title: "Home", tabBarIcon: ({ color, size }) => <House size={size} strokeWidth={2.2} color={color} /> }}
       />
       <Tabs.Screen
-        name="timer"
-        options={{ title: "Timer", tabBarIcon: ({ color, size }) => <Timer size={size} strokeWidth={2.2} color={color} /> }}
+        name="record"
+        options={{ title: "Record", tabBarIcon: ({ color, size }) => <CircleDot size={size} strokeWidth={2.2} color={color} /> }}
       />
       <Tabs.Screen
-        name="history"
-        options={{ title: "History", tabBarIcon: ({ color, size }) => <ClockArrowUp size={size} strokeWidth={2.2} color={color} /> }}
-      />
-      <Tabs.Screen
-        name="subjects"
-        options={{ title: "Subjects", tabBarIcon: ({ color, size }) => <Tags size={size} strokeWidth={2.2} color={color} /> }}
+        name="you"
+        options={{ title: "You", tabBarIcon: ({ color, size }) => <CircleUser size={size} strokeWidth={2.2} color={color} /> }}
       />
     </Tabs>
   );

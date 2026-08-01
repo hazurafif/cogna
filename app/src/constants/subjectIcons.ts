@@ -73,3 +73,21 @@ const iconByName: Record<SubjectIconName, LucideIcon> = {
 export function subjectIcon(name: string): LucideIcon {
   return iconByName[name as SubjectIconName] ?? BookOpen;
 }
+
+const SUBJECT_LABELS: Record<string, string> = {
+  math: "Math",
+  science: "Science",
+  language: "Language",
+  programming: "Programming",
+  reading: "Reading",
+  writing: "Writing",
+  history: "History",
+  music: "Music",
+  art: "Art",
+  "test-prep": "Test Prep",
+  other: "Other",
+};
+
+export function subjectLabel(name: string): string {
+  return SUBJECT_LABELS[name] ?? name;
+}

@@ -16,4 +16,11 @@ describe("Screen", () => {
     const { getByText } = await render(<Screen><Text>body</Text></Screen>);
     expect(getByText("body")).toBeTruthy();
   });
+
+  it("applies a custom style to the container", async () => {
+    const { getByText } = await render(
+      <Screen style={{ backgroundColor: "#1A1A1A" }}><Text>body</Text></Screen>,
+    );
+    expect(getByText("body")).toBeTruthy();
+  });
 });

@@ -31,7 +31,7 @@ func TestOpenRunsMigrations(t *testing.T) {
 
 	var n int
 	if err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'subjects', 'sessions')`,
+		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'subject_catalog', 'sessions')`,
 	).Scan(&n); err != nil {
 		t.Fatalf("query: %v", err)
 	}
@@ -148,8 +148,8 @@ func TestMigrateIdempotentAcrossFileReopen(t *testing.T) {
 	if err := s2.db.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&n); err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	if n != 2 {
-		t.Fatalf("migrations recorded = %d, want 2", n)
+	if n != 3 {
+		t.Fatalf("migrations recorded = %d, want 3", n)
 	}
 }
 
@@ -234,18 +234,18 @@ func TestMigrateUpgradesPreIconDatabase(t *testing.T) {
 	}
 	defer s.Close()
 
-	subs, err := s.ListSubjects(1)
+	subs, err := s.ListSubjects()
 	if err != nil {
 		t.Fatalf("list subjects: %v", err)
 	}
-	if len(subs) != 1 || subs[0].Name != "Old Math" || subs[0].Icon != "book-open" {
-		t.Fatalf("subjects = %+v, want legacy row with default icon", subs)
+	if len(subs) != 11 {
+		t.Fatalf("catalog = %d entries, want 11", len(subs))
 	}
 	sess, err := s.ListSessions(1, "", "", 0)
 	if err != nil {
 		t.Fatalf("list sessions: %v", err)
 	}
-	if len(sess) != 1 || sess[0].SubjectName != "Old Math" || sess[0].SubjectIcon != "book-open" {
-		t.Fatalf("sessions = %+v, want joined legacy subject", sess)
+	if len(sess) != 1 || sess[0].SubjectName != "other" || sess[0].SubjectIcon != "brain" {
+		t.Fatalf("sessions = %+v, want legacy subject mapped to other", sess)
 	}
 }

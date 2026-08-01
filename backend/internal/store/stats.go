@@ -45,7 +45,7 @@ func (s *Store) Summary(userID int64, now time.Time) (*Summary, error) {
 
 	rows, err := s.db.Query(
 		`SELECT sub.id, sub.name, sub.icon, SUM(sess.duration_minutes)
-		 FROM sessions sess JOIN subjects sub ON sub.id = sess.subject_id
+		 FROM sessions sess JOIN subject_catalog sub ON sub.id = sess.subject_id
 		 WHERE sess.user_id = ?
 		 GROUP BY sub.id, sub.name, sub.icon
 		 ORDER BY SUM(sess.duration_minutes) DESC, sub.id ASC`,

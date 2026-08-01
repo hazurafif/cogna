@@ -23,8 +23,6 @@ var (
 	ErrDuplicateEmail = errors.New("duplicate email")
 	// ErrSubjectNotFound is returned when a subject does not exist.
 	ErrSubjectNotFound = errors.New("subject not found")
-	// ErrSubjectInUse is returned when a subject cannot be deleted because sessions reference it.
-	ErrSubjectInUse = errors.New("subject in use")
 )
 
 // timeFormat is the canonical timestamp layout for rows written to SQLite.

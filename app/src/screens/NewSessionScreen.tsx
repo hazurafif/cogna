@@ -8,9 +8,12 @@ import { createSession, getSession, updateSession } from "../api/sessions";
 import { Button } from "../components/Button";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
+import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { localISO, todayDate } from "../utils/time";
+
+const QUICK_MINUTES = [15, 25, 45, 60];
 
 export function NewSessionScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -97,9 +100,20 @@ export function NewSessionScreen() {
           {subjects.map((s) => (
             <Chip
               key={s.id}
-              label={s.name}
+              label={subjectLabel(s.name)}
               selected={subjectId === s.id}
               onPress={() => setSubjectId(s.id)}
+            />
+          ))}
+        </View>
+        <Text style={styles.fieldLabel}>Duration</Text>
+        <View style={styles.subjectRow}>
+          {QUICK_MINUTES.map((m) => (
+            <Chip
+              key={m}
+              label={`${m}m`}
+              selected={minutes === String(m)}
+              onPress={() => setMinutes(String(m))}
             />
           ))}
         </View>

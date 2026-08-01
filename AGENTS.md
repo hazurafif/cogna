@@ -22,6 +22,7 @@ specs below — don't duplicate that material here.
 
 - **Backend** (from `backend/`):
   - Run: `go run ./cmd/server` (listens on `:8080` by default)
+  - Dev (live reload): `go tool air` — watches `.go` files, rebuilds and restarts (config in `backend/.air.toml`; binary output goes to `tmp/`, gitignored)
   - Test: `go test ./...`
   - Coverage: `go test ./... -coverprofile=/tmp/cover.out && go tool cover -func=/tmp/cover.out`
   - Lint/type: `go vet ./...` — must pass before considering work done

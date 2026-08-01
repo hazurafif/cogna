@@ -1,6 +1,7 @@
 import React from "react";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
-import { TimerScreen } from "./TimerScreen";
+import { router } from "expo-router";
+import { RecordScreen } from "./RecordScreen";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects } from "../api/subjects";
 import { createSession } from "../api/sessions";
@@ -13,20 +14,21 @@ jest.mock("../utils/time", () => ({
   localISO: jest.fn(() => "2026-07-31T10:00:00"),
 }));
 jest.mock("expo-router", () => ({
-  router: { push: jest.fn() },
+  router: { push: jest.fn(), navigate: jest.fn() },
 }));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockListSubjects = listSubjects as jest.Mock;
 const mockCreateSession = createSession as jest.Mock;
 
-describe("TimerScreen", () => {
+describe("RecordScreen", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ token: "tok" });
     mockListSubjects.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
+      { id: 1, name: "math", icon: "calculator" },
+      { id: 2, name: "other", icon: "brain" },
     ]);
   });
 
@@ -34,10 +36,16 @@ describe("TimerScreen", () => {
     jest.useRealTimers();
   });
 
+  it("shows catalog subjects with display labels", async () => {
+    const { getByText } = await render(<RecordScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+    expect(getByText("Other")).toBeTruthy();
+  });
+
   it("starts, ticks, and stops a session", async () => {
     mockCreateSession.mockResolvedValue({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<TimerScreen />);
+    const { getByText, getByTestId } = await render(<RecordScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -62,13 +70,13 @@ describe("TimerScreen", () => {
   });
 
   it("does not start without a subject", async () => {
-    const { getByTestId } = await render(<TimerScreen />);
+    const { getByTestId } = await render(<RecordScreen />);
     await fireEvent.press(getByTestId("start-button"));
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
   it("disables the start button while a run is in progress", async () => {
-    const { getByText, getByTestId } = await render(<TimerScreen />);
+    const { getByText, getByTestId } = await render(<RecordScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -77,10 +85,16 @@ describe("TimerScreen", () => {
     expect(getByTestId("start-button").props.accessibilityState.disabled).toBe(true);
   });
 
-  it("celebrates and navigates to history after a successful save", async () => {
+  it("opens the manual log from the secondary action", async () => {
+    const { getByTestId } = await render(<RecordScreen />);
+    await fireEvent.press(getByTestId("manual-button"));
+    expect(router.push).toHaveBeenCalledWith("/session/new");
+  });
+
+  it("celebrates and navigates home after a successful save", async () => {
     mockCreateSession.mockResolvedValue({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<TimerScreen />);
+    const { getByText, getByTestId } = await render(<RecordScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -91,14 +105,35 @@ describe("TimerScreen", () => {
     await act(async () => {
       jest.advanceTimersByTime(1500);
     });
-    expect(require("expo-router").router.push).toHaveBeenCalledWith("/(tabs)/history");
+    expect(router.navigate).toHaveBeenCalledWith("/");
+  });
+
+  it("keeps the run alive across re-renders (tab switches)", async () => {
+    const { getByText, getByTestId, rerender } = await render(<RecordScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.press(getByTestId("start-button"));
+
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    const before = getByTestId("elapsed").props.children;
+
+    await act(async () => {
+      rerender(<RecordScreen />);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(30_000);
+    });
+    expect(getByTestId("elapsed").props.children).not.toBe(before);
   });
 
   it("keeps ticking and allows a retry after a failed save", async () => {
     mockCreateSession.mockRejectedValueOnce(new Error("boom"));
     mockCreateSession.mockResolvedValueOnce({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<TimerScreen />);
+    const { getByText, getByTestId } = await render(<RecordScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));

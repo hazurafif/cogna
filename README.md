@@ -27,11 +27,13 @@ without it). Real env vars take precedence over `.env` values.
 
     cd app
     pnpm install
-    npx expo start
+    pnpm start
 
-Press `w` for web, `i` for iOS simulator. The web app expects the backend at
-`http://localhost:8080` (Android emulator: `http://10.0.2.2:8080`) — set
-`EXPO_PUBLIC_API_URL` to override.
+Press `w` for web, `i` for iOS simulator. `pnpm start` reads `backend/.env`
+and passes its `PORT` to the app as `EXPO_PUBLIC_API_PORT`, so the web app
+talks to the same port the backend listens on (Android emulator still uses
+`http://10.0.2.2:<port>`). Set `EXPO_PUBLIC_API_URL` to override the base URL
+entirely.
 
 ## Tests
 

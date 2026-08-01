@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, router } from "expo-router";
-import { Mail, Lock, BookOpen, Sparkles, ArrowRight } from "lucide-react-native";
+import { BookOpen, Lock, Mail, Sparkles } from "lucide-react-native";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
@@ -29,7 +29,7 @@ export function LoginScreen() {
   };
 
   return (
-    <Screen>
+    <Screen style={styles.screen}>
       <View style={styles.center}>
         <View style={styles.logoWrap}>
           <View style={styles.logo}>
@@ -40,11 +40,11 @@ export function LoginScreen() {
         <Text style={styles.title}>Cogna</Text>
         <Text style={styles.subtitle}>Track your study sessions, one hour at a time.</Text>
         <View style={styles.inputWrap}>
-          <Mail size={16} strokeWidth={2.2} color={colors.textMuted} />
+          <Mail size={16} strokeWidth={2.2} color={colors.authMuted} />
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.authMuted}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -53,11 +53,11 @@ export function LoginScreen() {
           />
         </View>
         <View style={styles.inputWrap}>
-          <Lock size={16} strokeWidth={2.2} color={colors.textMuted} />
+          <Lock size={16} strokeWidth={2.2} color={colors.authMuted} />
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.authMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -67,8 +67,8 @@ export function LoginScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title="Log in" onPress={onSubmit} loading={submitting} />
         <Link href="/register" style={styles.link}>
-          <Text style={styles.linkText}>No account? Register</Text>
-          <ArrowRight size={14} strokeWidth={2.2} color={colors.textSecondary} />
+          <Text style={styles.linkText}>No account?</Text>
+          <Text style={styles.linkAccent}>Register{">"}</Text>
         </Link>
       </View>
     </Screen>
@@ -76,6 +76,7 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { backgroundColor: colors.authBg },
   center: { flex: 1, justifyContent: "center", gap: spacing.md },
   logoWrap: { alignItems: "center", marginBottom: spacing.sm },
   logo: {
@@ -91,17 +92,26 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  logoSparkle: { position: "absolute", top: 2, right: "38%" },
+  logoSparkle: {
+    position: "absolute",
+    top: -6,
+    right: -10,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   title: {
     fontSize: 32,
     fontWeight: "800",
     letterSpacing: -0.8,
-    color: colors.text,
+    color: colors.white,
     textAlign: "center",
   },
   subtitle: {
     fontSize: fontSize.body,
-    color: colors.textMuted,
+    color: colors.authMuted,
     textAlign: "center",
     marginBottom: spacing.xl,
   },
@@ -109,15 +119,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.authSurface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.authBorder,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
   },
   input: {
     flex: 1,
-    paddingVertical: spacing.md,
+    paddingVertical: 15,
     fontSize: fontSize.body,
     color: colors.text,
   },
@@ -125,9 +135,10 @@ const styles = StyleSheet.create({
   link: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
+    alignSelf: "flex-start",
+    gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  linkText: { color: colors.textSecondary, fontSize: fontSize.body, fontWeight: "600" },
+  linkText: { color: colors.text, fontSize: fontSize.body, fontWeight: "500" },
+  linkAccent: { color: colors.primary, fontSize: fontSize.body, fontWeight: "700" },
 });

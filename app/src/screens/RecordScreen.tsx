@@ -9,6 +9,7 @@ import { createSession } from "../api/sessions";
 import { Button } from "../components/Button";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
+import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { localISO } from "../utils/time";
@@ -28,7 +29,7 @@ function formatElapsed(ms: number): string {
   return `${p(h)}:${p(m)}:${p(s)}`;
 }
 
-export function TimerScreen() {
+export function RecordScreen() {
   const { token } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectId, setSubjectId] = useState<number | null>(null);
@@ -74,7 +75,7 @@ export function TimerScreen() {
     if (!celebrating) return;
     celebrationTimerRef.current = setTimeout(() => {
       setCelebrating(false);
-      router.push("/(tabs)/history");
+      router.navigate("/");
     }, 1400);
     return () => {
       if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
@@ -125,22 +126,19 @@ export function TimerScreen() {
   const celebrationScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.15] });
 
   return (
-    <Screen title="Study timer">
+    <Screen title="Record">
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.subjectRow}>
           {subjects.map((s) => (
             <Chip
               key={s.id}
-              label={s.name}
+              label={subjectLabel(s.name)}
               selected={subjectId === s.id}
               onPress={() => setSubjectId(s.id)}
             />
           ))}
         </View>
-        {subjects.length === 0 ? (
-          <Text style={styles.hint}>Add a subject first (Subjects tab).</Text>
-        ) : null}
 
         <View style={styles.ringWrap}>
           {running ? (
@@ -191,7 +189,7 @@ export function TimerScreen() {
             </Text>
             <Text style={styles.runningLabel}>
               {running
-                ? `${subjects.find((s) => s.id === subjectId)?.name ?? ""} · timer running`
+                ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · timer running`
                 : "Pick a subject to begin"}
             </Text>
           </View>
@@ -213,6 +211,12 @@ export function TimerScreen() {
               testID="stop-button"
             />
           ) : null}
+          <Button
+            title="Log without timer"
+            variant="outline"
+            onPress={() => router.push("/session/new")}
+            testID="manual-button"
+          />
         </View>
       </ScrollView>
 
@@ -239,7 +243,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "center",
   },
-  hint: { color: colors.textMuted, fontSize: fontSize.body },
   ringWrap: {
     marginTop: spacing.md,
     alignItems: "center",

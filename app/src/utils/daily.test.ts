@@ -1,13 +1,22 @@
 import { StudySession } from "../api/sessions";
 import {
+  bestStreak,
   buildActivityWeek,
   DAILY_GOAL_MINUTES,
   dayKey,
   formatDayLabel,
+  goalDaysThisWeek,
   groupSessionsByDay,
+  heatIntensity,
+  minutesPerDay,
+  monthHeatmap,
+  monthKey,
+  startOfWeek,
   streakCopy,
   streakMilestone,
   todayMinutes,
+  weekMinutes,
+  weeklyTotals,
 } from "./daily";
 
 const NOW = new Date(2026, 6, 31, 12, 0, 0);
@@ -146,5 +155,134 @@ describe("streakCopy", () => {
 describe("DAILY_GOAL_MINUTES", () => {
   it("is a positive daily target", () => {
     expect(DAILY_GOAL_MINUTES).toBeGreaterThan(0);
+  });
+});
+
+describe("startOfWeek", () => {
+  it("returns the Monday of the current week", () => {
+    expect(dayKey(startOfWeek(NOW))).toBe("2026-07-27");
+  });
+});
+
+describe("weekMinutes", () => {
+  it("sums only sessions in the current week", () => {
+    const minutes = weekMinutes(
+      [
+        session("2026-07-27T09:00:00", 60), // Monday, in week
+        session("2026-07-31T14:00:00", 30), // Friday, in week
+        session("2026-07-26T09:00:00", 90), // Sunday, previous week
+        session("2026-08-03T09:00:00", 45), // next week (Monday)
+      ],
+      NOW,
+    );
+    expect(minutes).toBe(90);
+  });
+});
+
+describe("goalDaysThisWeek", () => {
+  it("counts days in the week that hit the daily goal", () => {
+    const days = goalDaysThisWeek(
+      [
+        session("2026-07-27T09:00:00", 120),
+        session("2026-07-28T09:00:00", 60),
+        session("2026-07-28T14:00:00", 61),
+        session("2026-07-29T09:00:00", 30),
+      ],
+      NOW,
+    );
+    expect(days).toBe(2);
+  });
+});
+
+describe("minutesPerDay", () => {
+  it("aggregates minutes by day", () => {
+    const totals = minutesPerDay([
+      session("2026-07-31T09:00:00", 60),
+      session("2026-07-31T14:00:00", 30),
+      session("2026-07-30T09:00:00", 45),
+    ]);
+    expect(totals.get("2026-07-31")).toBe(90);
+    expect(totals.get("2026-07-30")).toBe(45);
+    expect(totals.get("2026-07-29")).toBeUndefined();
+  });
+});
+
+describe("bestStreak", () => {
+  it("returns the longest run of consecutive study days", () => {
+    const streak = bestStreak([
+      session("2026-07-27T09:00:00", 30),
+      session("2026-07-28T09:00:00", 30),
+      session("2026-07-29T09:00:00", 30),
+      session("2026-07-31T09:00:00", 30),
+      session("2026-08-01T09:00:00", 30),
+    ]);
+    expect(streak).toBe(3);
+  });
+
+  it("is zero without sessions", () => {
+    expect(bestStreak([])).toBe(0);
+  });
+
+  it("counts a single day as one", () => {
+    expect(bestStreak([session("2026-07-31T09:00:00", 30)])).toBe(1);
+  });
+});
+
+describe("weeklyTotals", () => {
+  it("returns the last n weeks oldest first", () => {
+    const weeks = weeklyTotals(
+      [
+        session("2026-07-31T09:00:00", 60), // current week
+        session("2026-07-20T09:00:00", 45), // week of Jul 20
+      ],
+      4,
+      NOW,
+    );
+    expect(weeks).toHaveLength(4);
+    expect(weeks[0].weekStart).toBe("2026-07-06");
+    expect(weeks[0].minutes).toBe(0);
+    expect(weeks[1].weekStart).toBe("2026-07-13");
+    expect(weeks[1].minutes).toBe(0);
+    expect(weeks[2].weekStart).toBe("2026-07-20");
+    expect(weeks[2].minutes).toBe(45);
+    expect(weeks[3].weekStart).toBe("2026-07-27");
+    expect(weeks[3].minutes).toBe(60);
+  });
+});
+
+describe("monthKey", () => {
+  it("formats a month as YYYY-MM", () => {
+    expect(monthKey(new Date(2026, 6, 15))).toBe("2026-07");
+  });
+});
+
+describe("monthHeatmap", () => {
+  it("builds weeks aligned to Monday with minutes per day", () => {
+    const totals = new Map([["2026-07-01", 45]]);
+    const weeks = monthHeatmap(2026, 6, totals);
+    // July 2026 starts on a Wednesday, so the first row has two leading blanks.
+    expect(weeks[0][0]).toBeNull();
+    expect(weeks[0][1]).toBeNull();
+    expect(weeks[0][2]?.key).toBe("2026-07-01");
+    expect(weeks[0][2]?.minutes).toBe(45);
+    expect(weeks.every((w) => w.length === 7)).toBe(true);
+  });
+
+  it("handles an empty month without errors", () => {
+    const weeks = monthHeatmap(2026, 1, new Map());
+    expect(weeks.length).toBeGreaterThan(0);
+    expect(weeks.every((w) => w.length === 7)).toBe(true);
+  });
+});
+
+describe("heatIntensity", () => {
+  it("maps minutes to five intensity levels", () => {
+    expect(heatIntensity(0)).toBe(0);
+    expect(heatIntensity(29)).toBe(1);
+    expect(heatIntensity(30)).toBe(2);
+    expect(heatIntensity(59)).toBe(2);
+    expect(heatIntensity(60)).toBe(3);
+    expect(heatIntensity(119)).toBe(3);
+    expect(heatIntensity(120)).toBe(4);
   });
 });

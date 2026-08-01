@@ -96,3 +96,121 @@ export function streakCopy(streak: number, hasSessions: boolean): string {
   if (hasSessions) return "Every streak starts with one session";
   return "Log your first session to start a streak";
 }
+
+export function startOfWeek(now = new Date()): Date {
+  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const offset = (day.getDay() + 6) % 7; // Monday = 0
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate() - offset);
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+}
+
+export function weekMinutes(sessions: StudySession[], now = new Date()): number {
+  const start = startOfWeek(now);
+  const startKey = dayKey(start);
+  const endKey = dayKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7));
+  return sessions.reduce(
+    (sum, s) => {
+      const key = dayKey(new Date(s.started_at));
+      return key >= startKey && key < endKey ? sum + s.duration_minutes : sum;
+    },
+    0,
+  );
+}
+
+export function goalDaysThisWeek(sessions: StudySession[], now = new Date()): number {
+  const start = startOfWeek(now);
+  const startKey = dayKey(start);
+  const endKey = dayKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7));
+  const perDay = new Map<string, number>();
+  for (const s of sessions) {
+    const key = dayKey(new Date(s.started_at));
+    if (key >= startKey && key < endKey) {
+      perDay.set(key, (perDay.get(key) ?? 0) + s.duration_minutes);
+    }
+  }
+  let met = 0;
+  for (const minutes of perDay.values()) {
+    if (minutes >= DAILY_GOAL_MINUTES) met++;
+  }
+  return met;
+}
+
+export function minutesPerDay(sessions: StudySession[]): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const s of sessions) {
+    const key = dayKey(new Date(s.started_at));
+    totals.set(key, (totals.get(key) ?? 0) + s.duration_minutes);
+  }
+  return totals;
+}
+
+export function bestStreak(sessions: StudySession[]): number {
+  const days = [...new Set(sessions.map((s) => dayKey(new Date(s.started_at))))].sort();
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const key of days) {
+    run = prev !== null && daysBetween(prev, key) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = key;
+  }
+  return best;
+}
+
+export type WeekTotal = {
+  weekStart: string;
+  minutes: number;
+};
+
+export function weeklyTotals(sessions: StudySession[], weeks: number, now = new Date()): WeekTotal[] {
+  const totals = minutesPerDay(sessions);
+  const start = startOfWeek(now);
+  const out: WeekTotal[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const ws = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * i);
+    const wsKey = dayKey(ws);
+    const weKey = dayKey(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7));
+    let minutes = 0;
+    for (const [key, m] of totals) {
+      if (key >= wsKey && key < weKey) minutes += m;
+    }
+    out.push({ weekStart: wsKey, minutes });
+  }
+  return out;
+}
+
+export function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export type HeatmapCell = {
+  key: string;
+  minutes: number;
+} | null;
+
+export function monthHeatmap(year: number, month: number, totals: Map<string, number>): HeatmapCell[][] {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = (new Date(year, month, 1).getDay() + 6) % 7; // Monday = 0
+  const cells: (HeatmapCell)[] = Array.from({ length: startOffset }, () => null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = dayKey(new Date(year, month, d));
+    cells.push({ key, minutes: totals.get(key) ?? 0 });
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks: HeatmapCell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+  return weeks;
+}
+
+export function heatIntensity(minutes: number): 0 | 1 | 2 | 3 | 4 {
+  if (minutes <= 0) return 0;
+  if (minutes < 30) return 1;
+  if (minutes < 60) return 2;
+  if (minutes < 120) return 3;
+  return 4;
+}

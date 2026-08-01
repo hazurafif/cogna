@@ -10,7 +10,7 @@ import (
 func TestStatsSummary(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "stat@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	// Dates relative to the real "today" so week/streak assertions hold on any run date
 	today := time.Now().Format("2006-01-02")

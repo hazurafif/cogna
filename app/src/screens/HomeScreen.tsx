@@ -1,47 +1,48 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { RefreshCw, Clock, CalendarDays, Flame, LogOut, Target } from "lucide-react-native";
-import { useFocusEffect } from "expo-router";
+import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import { RefreshCw, ChevronRight, History, Target } from "lucide-react-native";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
-import { fetchSummary, Summary } from "../api/stats";
 import { listSessions, StudySession } from "../api/sessions";
-import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
-import { StatCard } from "../components/StatCard";
 import { SubjectIcon } from "../components/SubjectIcon";
+import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
-import { fontSize, radius, spacing } from "../theme/tokens";
+import { fontSize, radius, shadow, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
 import {
-  buildActivityWeek,
   DAILY_GOAL_MINUTES,
-  streakCopy,
-  streakMilestone,
+  goalDaysThisWeek,
+  groupSessionsByDay,
   todayMinutes,
+  weekMinutes,
 } from "../utils/daily";
 
 function initialOf(email: string): string {
   return email.trim().charAt(0).toUpperCase() || "?";
 }
 
+function formatTime(startedAt: string): string {
+  const [date, time] = startedAt.split("T");
+  if (!time) return date.slice(5);
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 export function HomeScreen() {
-  const { token, user, logout } = useAuth();
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const { token, user } = useAuth();
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
     try {
-      setSummary(await fetchSummary(token));
+      setSessions(await listSessions(token));
       setError(null);
     } catch {
-      setError("Could not load stats. Is the backend running?");
-    }
-    try {
-      setSessions(await listSessions(token));
-    } catch {
-      setSessions([]);
+      setError("Could not load sessions. Is the backend running?");
     }
   }, [token]);
 
@@ -51,12 +52,43 @@ export function HomeScreen() {
     }, [refresh]),
   );
 
-  const week = buildActivityWeek(sessions);
-  const maxDayMinutes = Math.max(...week.map((d) => d.minutes), 1);
+  const sections = groupSessionsByDay(sessions);
+  const week = weekMinutes(sessions);
+  const goalDays = goalDaysThisWeek(sessions);
   const today = todayMinutes(sessions);
   const goalPct = Math.min(100, Math.round((today / DAILY_GOAL_MINUTES) * 100));
-  const milestone = summary ? streakMilestone(summary.streak_days) : null;
-  const streakNote = summary ? streakCopy(summary.streak_days, sessions.length > 0) : null;
+
+  const header = (
+    <View style={styles.content}>
+      <View style={styles.weekCard}>
+        <View style={styles.weekHeader}>
+          <View>
+            <Text style={styles.weekLabel}>THIS WEEK</Text>
+            <Text style={styles.weekValue}>{formatDuration(week)}</Text>
+          </View>
+          <View style={styles.goalDaysBadge}>
+            <Target size={14} strokeWidth={2.2} color={colors.primary} />
+            <Text style={styles.goalDaysText}>Goal met {goalDays}/7 days</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.goalCard}>
+        <View style={styles.goalHeader}>
+          <View style={styles.goalTitleWrap}>
+            <Target size={16} strokeWidth={2.2} color={colors.primary} />
+            <Text style={styles.goalTitle}>Today{"'"}s goal</Text>
+          </View>
+          <Text style={styles.goalValue}>
+            {formatMinutes(today)} <Text style={styles.goalOf}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
+          </Text>
+        </View>
+        <View style={styles.goalTrack}>
+          <View style={[styles.goalFill, { width: `${goalPct}%` }]} />
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <Screen>
@@ -75,95 +107,52 @@ export function HomeScreen() {
         </Pressable>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {summary ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={styles.cardRow}>
-            <StatCard icon={Clock} value={formatDuration(summary.total_minutes)} label="ALL TIME" />
-            <StatCard icon={CalendarDays} value={formatDuration(summary.week_minutes)} label="THIS WEEK" />
-            <StatCard icon={Flame} value={`${summary.streak_days} days`} label="STREAK" highlighted />
-          </View>
-
-          <View style={styles.streakRow}>
-            <Flame size={14} strokeWidth={2.2} color={colors.primary} />
-            <Text style={styles.streakNote}>{streakNote}</Text>
-            {milestone ? <Text style={styles.milestoneBadge}>{milestone}</Text> : null}
-          </View>
-
-          <View style={styles.goalCard}>
-            <View style={styles.goalHeader}>
-              <View style={styles.goalTitleWrap}>
-                <Target size={16} strokeWidth={2.2} color={colors.primary} />
-                <Text style={styles.goalTitle}>Today{"'"}s goal</Text>
-              </View>
-              <Text style={styles.goalValue}>
-                {formatMinutes(today)} <Text style={styles.goalOf}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
+      <SectionList
+        sections={sections}
+        keyExtractor={(s) => String(s.id)}
+        contentContainerStyle={styles.list}
+        stickySectionHeadersEnabled={false}
+        ListHeaderComponent={header}
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.dayLabel}>{section.label}</Text>
+        )}
+        renderItem={({ item }) => (
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => router.push(`/session/${item.id}`)}
+          >
+            <View style={styles.iconChip}>
+              <SubjectIcon name={item.subject_icon} size={16} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.rowName}>{subjectLabel(item.subject_name)}</Text>
+              <Text style={styles.rowMeta}>
+                {formatTime(item.started_at)} · {item.source}
               </Text>
             </View>
-            <View style={styles.goalTrack}>
-              <View style={[styles.goalFill, { width: `${goalPct}%` }]} />
+            <Text style={styles.rowDuration}>{formatDuration(item.duration_minutes)}</Text>
+            <ChevronRight size={16} strokeWidth={2.2} color={colors.textMuted} />
+          </Pressable>
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <History size={26} strokeWidth={2} color={colors.textMuted} />
             </View>
+            <Text style={styles.emptyTitle}>No sessions yet</Text>
+            <Text style={styles.emptyBody}>
+              Head to the Record tab to start your first study session.
+            </Text>
           </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Last 7 days</Text>
-            <Text style={styles.sectionHint}>{formatMinutes(today)} today</Text>
-          </View>
-          <View style={styles.weekRow}>
-            {week.map((d) => (
-              <View key={d.date} style={styles.weekDay}>
-                <Text style={[styles.weekday, d.isToday && styles.weekdayToday]}>{d.weekday}</Text>
-                <View style={styles.weekBarTrack}>
-                  <View
-                    style={[
-                      styles.weekBarFill,
-                      {
-                        backgroundColor: d.isToday ? colors.primary : colors.textSecondary,
-                        height: `${Math.max(12, (d.minutes / maxDayMinutes) * 100)}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.weekMinutes, d.isToday && styles.weekMinutesToday]}>
-                  {d.minutes > 0 ? formatMinutes(d.minutes) : "–"}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>By subject</Text>
-            <Text style={styles.sectionHint}>{summary.per_subject.length} tracked</Text>
-          </View>
-          {summary.per_subject.map((s) => (
-            <View key={s.subject_id} style={styles.subjectRow}>
-              <SubjectIcon name={s.icon} size={14} />
-              <Text style={styles.subjectName}>{s.name}</Text>
-              <View style={styles.subjectBarTrack}>
-                <View
-                  style={[
-                    styles.subjectBarFill,
-                    {
-                      backgroundColor: colors.primary,
-                      width: `${Math.max(4, (s.minutes / Math.max(summary.total_minutes, 1)) * 100)}%`,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.subjectMinutes}>{formatMinutes(s.minutes)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      ) : null}
-      <View style={styles.logoutRow}>
-        <LogOut size={16} strokeWidth={2.2} color={colors.textSecondary} />
-        <Button title="Log out" variant="outline" onPress={() => logout()} testID="logout-button" />
-      </View>
+        }
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg, paddingBottom: spacing.xl },
+  content: { gap: spacing.lg },
+  list: { paddingBottom: spacing.xl },
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -191,19 +180,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cardRow: { flexDirection: "row", gap: spacing.sm },
-  streakRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  streakNote: { flex: 1, fontSize: fontSize.caption, color: colors.textSecondary },
-  milestoneBadge: {
+  weekCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  weekHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  weekLabel: {
+    fontSize: fontSize.caption,
+    fontWeight: "800",
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  weekValue: {
+    fontSize: fontSize.heading,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -0.5,
+    marginTop: 2,
+    fontVariant: ["tabular-nums"],
+  },
+  goalDaysBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     backgroundColor: colors.primarySoft,
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    color: colors.primary,
-    fontSize: fontSize.caption,
-    fontWeight: "700",
-    overflow: "hidden",
+    paddingVertical: spacing.sm,
   },
+  goalDaysText: { color: colors.primary, fontSize: fontSize.caption, fontWeight: "700" },
   goalCard: {
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
@@ -224,58 +236,55 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   goalFill: { height: "100%", borderRadius: radius.full, backgroundColor: colors.primary },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    marginTop: spacing.xs,
+  dayLabel: {
+    fontSize: fontSize.caption,
+    fontWeight: "800",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
-  sectionTitle: { fontSize: fontSize.title, fontWeight: "700", color: colors.text, letterSpacing: -0.3 },
-  sectionHint: { fontSize: fontSize.caption, color: colors.textMuted },
-  weekRow: { flexDirection: "row", gap: spacing.sm },
-  weekDay: { flex: 1, alignItems: "center", gap: spacing.sm },
-  weekday: { fontSize: fontSize.label, fontWeight: "600", color: colors.textMuted },
-  weekdayToday: { color: colors.primary },
-  weekBarTrack: {
-    height: 64,
-    width: "100%",
-    justifyContent: "flex-end",
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.sm,
-    padding: 2,
+  iconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  weekBarFill: { width: "100%", borderRadius: radius.sm },
-  weekMinutes: { fontSize: fontSize.label, color: colors.textMuted, fontVariant: ["tabular-nums"] },
-  weekMinutesToday: { color: colors.text, fontWeight: "700" },
-  subjectRow: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  subjectName: { width: 90, fontSize: fontSize.body, fontWeight: "600", color: colors.text },
-  subjectBarTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
-    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    ...shadow.card,
   },
-  subjectBarFill: { height: "100%", borderRadius: radius.full },
-  subjectMinutes: {
-    width: 44,
-    textAlign: "right",
+  rowPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  rowBody: { flex: 1 },
+  rowName: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
+  rowMeta: { fontSize: fontSize.caption, color: colors.textSecondary, marginTop: 2 },
+  rowDuration: {
     fontSize: fontSize.body,
-    fontWeight: "700",
-    color: colors.textSecondary,
+    fontWeight: "800",
+    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
-  logoutRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
   error: { color: colors.danger, fontSize: fontSize.body },
+  empty: { alignItems: "center", gap: spacing.sm, marginTop: spacing.xl * 2 },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
+  emptyBody: { fontSize: fontSize.body, color: colors.textMuted, textAlign: "center" },
 });

@@ -5,19 +5,10 @@ import (
 	"testing"
 )
 
-func mustSubject(t *testing.T, s *Store, userID int64, name string) int64 {
-	t.Helper()
-	sub, err := s.CreateSubject(userID, name, "book-open")
-	if err != nil {
-		t.Fatalf("create subject: %v", err)
-	}
-	return sub.ID
-}
-
 func TestCreateAndGetSession(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "sess@example.com")
-	subjectID := mustSubject(t, s, userID, "Math")
+	subjectID := mustCatalogSubject(t, s, "math")
 
 	sess, err := s.CreateSession(userID, subjectID, "2026-07-31T09:00:00", "2026-07-31T10:30:00", "timer", nil)
 	if err != nil {
@@ -34,27 +25,42 @@ func TestCreateAndGetSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}
-	if got.SubjectID != subjectID || got.SubjectName != "Math" {
+	if got.SubjectID != subjectID || got.SubjectName != "math" {
 		t.Fatalf("got %+v", got)
 	}
 }
 
-func TestCreateSessionValidatesSubjectOwnership(t *testing.T) {
+func TestCreateSessionValidatesSubjectExists(t *testing.T) {
 	s := newTestStore(t)
-	userA := mustUser(t, s, "own-a@example.com")
-	userB := mustUser(t, s, "own-b@example.com")
-	subjectA := mustSubject(t, s, userA, "A-subject")
+	userID := mustUser(t, s, "own@example.com")
 
-	if _, err := s.CreateSession(userB, subjectA, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "manual", nil); !errors.Is(err, ErrSubjectNotFound) {
+	if _, err := s.CreateSession(userID, 9999, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "manual", nil); !errors.Is(err, ErrSubjectNotFound) {
 		t.Fatalf("err = %v, want ErrSubjectNotFound", err)
+	}
+}
+
+func TestCreateSessionAcceptsAnyCatalogSubject(t *testing.T) {
+	s := newTestStore(t)
+	userID := mustUser(t, s, "cat@example.com")
+	otherID := mustCatalogSubject(t, s, "other")
+
+	if _, err := s.CreateSession(userID, otherID, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "manual", nil); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	got, err := s.ListSessions(userID, "", "", 0)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(got) != 1 || got[0].SubjectID != otherID || got[0].SubjectName != "other" {
+		t.Fatalf("got %+v", got)
 	}
 }
 
 func TestListSessionsFilters(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "list@example.com")
-	subA := mustSubject(t, s, userID, "Math")
-	subB := mustSubject(t, s, userID, "History")
+	subA := mustCatalogSubject(t, s, "math")
+	subB := mustCatalogSubject(t, s, "history")
 
 	if _, err := s.CreateSession(userID, subA, "2026-07-30T09:00:00", "2026-07-30T10:00:00", "timer", nil); err != nil {
 		t.Fatalf("create: %v", err)
@@ -94,8 +100,8 @@ func TestListSessionsFilters(t *testing.T) {
 func TestUpdateAndDeleteSession(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "upd@example.com")
-	subA := mustSubject(t, s, userID, "Math")
-	subB := mustSubject(t, s, userID, "History")
+	subA := mustCatalogSubject(t, s, "math")
+	subB := mustCatalogSubject(t, s, "history")
 
 	sess, err := s.CreateSession(userID, subA, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "timer", nil)
 	if err != nil {
@@ -125,8 +131,8 @@ func TestUpdateSessionScopingAndErrors(t *testing.T) {
 	s := newTestStore(t)
 	userA := mustUser(t, s, "upd-a@example.com")
 	userB := mustUser(t, s, "upd-b@example.com")
-	subA := mustSubject(t, s, userA, "Math")
-	subB := mustSubject(t, s, userB, "History")
+	subA := mustCatalogSubject(t, s, "math")
+	subB := mustCatalogSubject(t, s, "history")
 
 	sess, err := s.CreateSession(userA, subA, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "timer", nil)
 	if err != nil {
@@ -136,8 +142,8 @@ func TestUpdateSessionScopingAndErrors(t *testing.T) {
 	if _, err := s.UpdateSession(userB, sess.ID, subB, "2026-07-31T08:00:00", "2026-07-31T09:00:00", nil); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("other user's session: err = %v, want ErrNotFound", err)
 	}
-	if _, err := s.UpdateSession(userA, sess.ID, subB, "2026-07-31T08:00:00", "2026-07-31T09:00:00", nil); !errors.Is(err, ErrSubjectNotFound) {
-		t.Fatalf("other user's subject: err = %v, want ErrSubjectNotFound", err)
+	if _, err := s.UpdateSession(userA, sess.ID, 9999, "2026-07-31T08:00:00", "2026-07-31T09:00:00", nil); !errors.Is(err, ErrSubjectNotFound) {
+		t.Fatalf("unknown subject: err = %v, want ErrSubjectNotFound", err)
 	}
 }
 
@@ -153,7 +159,7 @@ func TestDurationMinutesRejectsBadTimes(t *testing.T) {
 func TestCreateSessionAcceptsRFC3339(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "rfc3339@example.com")
-	subjectID := mustSubject(t, s, userID, "Math")
+	subjectID := mustCatalogSubject(t, s, "math")
 
 	sess, err := s.CreateSession(userID, subjectID, "2026-07-31T09:00:00Z", "2026-07-31T10:30:00Z", "timer", nil)
 	if err != nil {

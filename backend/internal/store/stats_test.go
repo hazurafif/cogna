@@ -8,8 +8,8 @@ import (
 func TestSummary(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "stats@example.com")
-	math := mustSubject(t, s, userID, "Math")
-	hist := mustSubject(t, s, userID, "History")
+	math := mustCatalogSubject(t, s, "math")
+	hist := mustCatalogSubject(t, s, "history")
 
 	// Same-day sessions: 90 + 60 minutes
 	if _, err := s.CreateSession(userID, math, "2026-07-29T09:00:00", "2026-07-29T10:30:00", "timer", nil); err != nil {
@@ -52,15 +52,15 @@ func TestSummary(t *testing.T) {
 	if len(sum.PerSubject) != 2 {
 		t.Fatalf("per subject = %d entries, want 2", len(sum.PerSubject))
 	}
-	if sum.PerSubject[0].Name != "Math" || sum.PerSubject[0].Minutes != 210 {
-		t.Fatalf("first subject = %+v, want Math 210", sum.PerSubject[0])
+	if sum.PerSubject[0].Name != "math" || sum.PerSubject[0].Minutes != 210 {
+		t.Fatalf("first subject = %+v, want math 210", sum.PerSubject[0])
 	}
 }
 
 func TestWeekBoundaryIsMondayStart(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "week@example.com")
-	math := mustSubject(t, s, userID, "Math")
+	math := mustCatalogSubject(t, s, "math")
 
 	// Sunday 2026-07-26 is in the previous week; Monday 2026-07-27 starts the current one.
 	if _, err := s.CreateSession(userID, math, "2026-07-26T09:00:00", "2026-07-26T10:00:00", "timer", nil); err != nil {
@@ -90,7 +90,7 @@ func TestWeekBoundaryIsMondayStart(t *testing.T) {
 func TestWeekExcludesSessionsFromNextWeek(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "future@example.com")
-	math := mustSubject(t, s, userID, "Math")
+	math := mustCatalogSubject(t, s, "math")
 
 	// Monday 2026-07-27 starts the current week; Monday 2026-08-03 is next week.
 	if _, err := s.CreateSession(userID, math, "2026-07-27T09:00:00", "2026-07-27T10:00:00", "timer", nil); err != nil {
@@ -150,7 +150,7 @@ func TestSummaryEmpty(t *testing.T) {
 func TestStreakDoesNotBreakOnTodayWithoutStudy(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "streak@example.com")
-	sub := mustSubject(t, s, userID, "Math")
+	sub := mustCatalogSubject(t, s, "math")
 
 	if _, err := s.CreateSession(userID, sub, "2026-07-29T09:00:00", "2026-07-29T10:00:00", "timer", nil); err != nil {
 		t.Fatalf("create: %v", err)
@@ -175,7 +175,7 @@ func TestStreakDoesNotBreakOnTodayWithoutStudy(t *testing.T) {
 func TestStreakResetsAfterGap(t *testing.T) {
 	s := newTestStore(t)
 	userID := mustUser(t, s, "gap@example.com")
-	sub := mustSubject(t, s, userID, "Math")
+	sub := mustCatalogSubject(t, s, "math")
 
 	if _, err := s.CreateSession(userID, sub, "2026-07-28T09:00:00", "2026-07-28T10:00:00", "timer", nil); err != nil {
 		t.Fatalf("create: %v", err)

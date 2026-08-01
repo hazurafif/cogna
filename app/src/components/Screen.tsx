@@ -1,16 +1,17 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { colors } from "../theme/colors";
 import { fontSize, spacing } from "../theme/tokens";
 
 type ScreenProps = {
   title?: string;
+  style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 };
 
-export function Screen({ title, children }: ScreenProps) {
+export function Screen({ title, style, children }: ScreenProps) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {children}
     </View>

@@ -42,6 +42,10 @@ decisions as they are made; never rewrite history.
 
 ## 2026-08-01
 
+- **Air for live reload** — Backend dev uses `air` pinned as a Go tool directive
+  (`go get -tool github.com/air-verse/air`, run via `go tool air`). Config lives in
+  `backend/.air.toml`: builds `./cmd/server` into `backend/tmp/` (gitignored), watches `.go`
+  files, cleans up on exit. No global installs; the tool version is tracked in `go.mod`.
 - **RNTL v14 async APIs** — `@testing-library/react-native` v14 makes `render`, `renderHook`,
   `fireEvent`, and `act` async; tests must `await` them. Plan snippets written against the v13
   sync API were adapted during implementation.
@@ -67,3 +71,51 @@ decisions as they are made; never rewrite history.
 - **React Compiler lint** — `react-hooks/static-components` forbids resolving a component during
   render; `SubjectIcon` builds its element with `createElement` so the icon lookup is not treated
   as component creation.
+- **Motivation layer for stats (2026-08-01)** — Home now shows a 7-day activity strip, a
+  "Today's goal" progress bar (`DAILY_GOAL_MINUTES = 120`, a constant in `src/utils/daily.ts`),
+  streak milestone badges (3/7/14/30 days) and forgiving streak copy. Aggregation logic lives in
+  `src/utils/daily.ts` (pure, unit-tested); the strip is built from `listSessions` client-side
+  rather than a new endpoint.
+- **Session-complete celebration** — the timer shows a full-screen "Session saved!" overlay with a
+  pulsing flame for 1.4s before navigating to History. Haptics (`expo-haptics`) fire on start and
+  successful save via `src/utils/haptics.ts`, which no-ops safely outside native (and in Jest).
+- **History grouped by day** — `SectionList` with Today/Yesterday/`Mon, Jul 27` headers and
+  AM/PM start times; empty state with guidance. Subjects and History also gained empty states.
+- **Design exploration write-up** — competitive/UX research for study-tracker apps (streak
+  psychology from Trophy's 18M-streak dataset, Duolingo/Forest/Strava patterns) was done in
+  chat; the implemented subset is the three quickest wins above. Streak design notes
+  (days 3-7 critical, Friday = top break day, forgiving post-break copy) informed the copy.
+- **Shared .env between backend and app** — `backend/.env` is the single source of truth for
+  the API port. `app/scripts/backend-env.js` (plain CJS, unit-tested) parses it and spawns the
+  Expo CLI with `EXPO_PUBLIC_API_PORT` set; `src/api/config.ts` derives the API URL from that
+  port (`localhost` on web/iOS, `10.0.2.2` on Android). `EXPO_PUBLIC_API_URL` still wins when
+  set. Run the app via `pnpm start`/`pnpm web` etc.; bare `npx expo start` skips the loader.
+
+## 2026-08-01 (redesign-app-flow)
+
+- **Strava-like 3-tab IA** — the app moves from 4 tabs (Home/Timer/History/Subjects) to 3
+  (Home/Record/You). Home is a day-grouped timeline of your own sessions with a week summary
+  card and today's goal bar; Record is "pick a subject, start, stop, save" with a secondary
+  "Log without timer" manual form; You is the profile tab (identity, totals, streak heatmap
+  calendar, subject breakdown, weekly chart, milestones). History and Subjects screens are
+  gone; session detail/edit screens stay reachable from the timeline.
+- **Fixed subject catalog** — per-user subject CRUD is removed. Migration `0003` creates a
+  global `subject_catalog` seeded with 11 entries (math, science, language, programming,
+  reading, writing, history, music, art, test-prep, other) and rebuilds `sessions`,
+  mapping legacy subjects by case-insensitive name with a fallback to `other`. `GET
+  /subjects` returns the catalog for any user; POST/PUT/DELETE return 404. Catalog names are
+  kebab-case; the app maps them to display labels via `subjectLabel` in
+  `app/src/constants/subjectIcons.ts`.
+- **Client-side You-tab aggregation** — totals come from `GET /stats/summary`; everything
+  else (best streak, per-day minutes for the heatmap, weekly totals) is derived from
+  `listSessions` via pure helpers in `app/src/utils/daily.ts` (`bestStreak`,
+  `minutesPerDay`, `weeklyTotals`, `monthHeatmap`, `heatIntensity`). No new endpoints.
+- **Celebration lands on Home** — after a saved timer session the 1.4s celebration navigates
+  to the Home tab (`router.navigate("/")`) so the new session is the newest timeline card
+  (was `router.push("/(tabs)/history")`).
+- **Timer state survives tab switches** — Expo Router keeps visited tabs mounted, so the
+  Record timer's component state (startedAt, interval) keeps running across tab changes;
+  `RecordScreen.test.tsx` locks this in with a rerender-survival test. App kill still loses
+  the run (v1 behavior).
+- **Manual log quick presets** — the manual session form offers 15/25/45/60-minute preset
+  chips that set the minutes field.

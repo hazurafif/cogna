@@ -29,7 +29,7 @@ describe("NewSessionScreen", () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ token: "tok" });
     mockListSubjects.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
+      { id: 1, name: "math", icon: "calculator" },
     ]);
   });
 
@@ -42,6 +42,31 @@ describe("NewSessionScreen", () => {
     await fireEvent.press(getByText("Math"));
     await fireEvent.changeText(getByPlaceholderText("Date (YYYY-MM-DD)"), "2026-07-31");
     await fireEvent.changeText(getByPlaceholderText("Minutes"), "45");
+    await fireEvent.press(getByText("Save session"));
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        "tok",
+        expect.objectContaining({
+          subject_id: 1,
+          source: "manual",
+          ended_at: "2026-07-31T00:45:00",
+        }),
+      );
+    });
+  });
+
+  it("sets minutes from a quick-duration preset", async () => {
+    mockCreateSession.mockResolvedValue({ id: 5 });
+
+    const { getByDisplayValue, getByPlaceholderText, getByText } = await render(<NewSessionScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.changeText(getByPlaceholderText("Date (YYYY-MM-DD)"), "2026-07-31");
+    await fireEvent.press(getByText("45m"));
+
+    expect(getByDisplayValue("45")).toBeTruthy();
     await fireEvent.press(getByText("Save session"));
 
     await waitFor(() => {

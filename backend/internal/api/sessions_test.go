@@ -40,7 +40,7 @@ func createSession(t *testing.T, ts *httptest.Server, token string, subjectID in
 func TestSessionLifecycle(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "life@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	id := createSession(t, ts, token, subID, "2026-07-31T09:00:00", "2026-07-31T10:15:00")
 
@@ -58,7 +58,7 @@ func TestSessionLifecycle(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&sess); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if sess.DurationMinutes != 75 || sess.SubjectName != "Math" {
+	if sess.DurationMinutes != 75 || sess.SubjectName != "math" {
 		t.Fatalf("got %+v", sess)
 	}
 
@@ -90,7 +90,7 @@ func TestSessionLifecycle(t *testing.T) {
 func TestCreateSessionValidation(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "sv@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	for _, payload := range []string{
 		`{"subject_id":` + strconvFormatInt(subID) + `,"started_at":"2026-07-31T10:00:00","ended_at":"2026-07-31T09:00:00","source":"manual"}`,
@@ -116,7 +116,7 @@ func TestCreateSessionValidation(t *testing.T) {
 func TestCreateSessionAcceptsRFC3339(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "rfc@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	id := createSession(t, ts, token, subID, "2026-07-31T09:00:00Z", "2026-07-31T10:30:00Z")
 
@@ -139,14 +139,12 @@ func TestCreateSessionAcceptsRFC3339(t *testing.T) {
 	}
 }
 
-func TestSessionSubjectScopedToUser(t *testing.T) {
+func TestCreateSessionRejectsUnknownSubject(t *testing.T) {
 	ts := newTestServer(t)
-	tokenA := registerUser(t, ts, "ss-a@example.com", "password123")
 	tokenB := registerUser(t, ts, "ss-b@example.com", "password123")
-	subA := createSubject(t, ts, tokenA, "Mine", "book-open")
 
-	body := bytes.NewBufferString(`{"subject_id":` + strconvFormatInt(subA) +
-		`,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`)
+	body := bytes.NewBufferString(`{"subject_id":9999,
+		"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`)
 	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/sessions", body)
 	req.Header.Set("Authorization", "Bearer "+tokenB)
 	req.Header.Set("Content-Type", "application/json")
@@ -160,29 +158,36 @@ func TestSessionSubjectScopedToUser(t *testing.T) {
 	}
 }
 
-func TestDeleteSubjectWithSessionsReturnsConflict(t *testing.T) {
+func TestCreateSessionAcceptsAnyCatalogSubject(t *testing.T) {
 	ts := newTestServer(t)
-	token := registerUser(t, ts, "del409@example.com", "password123")
-	subID := createSubject(t, ts, token, "Busy", "book-open")
-	createSession(t, ts, token, subID, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
+	token := registerUser(t, ts, "cat@example.com", "password123")
+	otherID := catalogSubjectID(t, ts, token, "other")
 
-	req, _ := http.NewRequest(http.MethodDelete, ts.URL+"/api/v1/subjects/"+strconvFormatInt(subID), nil)
+	id := createSession(t, ts, token, otherID, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
+
+	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/api/v1/sessions/"+strconvFormatInt(id), nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Fatalf("delete subject: %v", err)
+		t.Fatalf("get: %v", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusConflict {
-		t.Fatalf("status = %d, want 409", resp.StatusCode)
+	var sess struct {
+		SubjectName string `json:"subject_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&sess); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if sess.SubjectName != "other" {
+		t.Fatalf("subject = %q, want other", sess.SubjectName)
 	}
 }
 
 func TestListSessionsHandler(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "ls@example.com", "password123")
-	subA := createSubject(t, ts, token, "Math", "book-open")
-	subB := createSubject(t, ts, token, "History", "book-open")
+	subA := catalogSubjectID(t, ts, token, "math")
+	subB := catalogSubjectID(t, ts, token, "history")
 	createSession(t, ts, token, subA, "2026-07-30T09:00:00", "2026-07-30T10:00:00")
 	createSession(t, ts, token, subB, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
 
@@ -214,11 +219,11 @@ func TestListSessionsHandler(t *testing.T) {
 	}
 
 	all := list("")
-	if len(all) != 2 || all[0].SubjectName != "History" || all[1].SubjectName != "Math" {
+	if len(all) != 2 || all[0].SubjectName != "history" || all[1].SubjectName != "math" {
 		t.Fatalf("all: got %+v, want newest first", all)
 	}
 	day := list("?from=2026-07-31&to=2026-07-31")
-	if len(day) != 1 || day[0].SubjectName != "History" {
+	if len(day) != 1 || day[0].SubjectName != "history" {
 		t.Fatalf("day: got %+v", day)
 	}
 	only := list("?subject_id=" + strconvFormatInt(subA))
@@ -246,7 +251,7 @@ func TestListSessionsRejectsBadSubjectID(t *testing.T) {
 func TestSessionNotFound(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "nf@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete} {
 		var body io.Reader
@@ -315,7 +320,7 @@ func TestCreateSessionInternalError(t *testing.T) {
 	defer ts.Close()
 
 	token := registerUser(t, ts, "cerr@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	st.Close()
 
@@ -343,7 +348,7 @@ func TestUpdateSessionInternalError(t *testing.T) {
 	defer ts.Close()
 
 	token := registerUser(t, ts, "uerr@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 	id := createSession(t, ts, token, subID, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
 
 	st.Close()
@@ -365,7 +370,7 @@ func TestUpdateSessionInternalError(t *testing.T) {
 func TestCreateSessionRejectsOffsetMismatch(t *testing.T) {
 	ts := newTestServer(t)
 	token := registerUser(t, ts, "off@example.com", "password123")
-	subID := createSubject(t, ts, token, "Math", "book-open")
+	subID := catalogSubjectID(t, ts, token, "math")
 
 	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/sessions",
 		strings.NewReader(`{"subject_id":`+strconvFormatInt(subID)+`,"started_at":"2026-07-31T08:00:00Z","ended_at":"2026-07-31T09:00:00+02:00","source":"manual"}`))
@@ -392,16 +397,14 @@ func TestCreateSessionRejectsOffsetMismatch(t *testing.T) {
 	}
 }
 
-func TestUpdateSessionRejectsOtherUsersSubject(t *testing.T) {
+func TestUpdateSessionRejectsUnknownSubject(t *testing.T) {
 	ts := newTestServer(t)
-	tokenA := registerUser(t, ts, "updsub-a@example.com", "password123")
 	tokenB := registerUser(t, ts, "updsub-b@example.com", "password123")
-	subA := createSubject(t, ts, tokenA, "Mine", "book-open")
-	subB := createSubject(t, ts, tokenB, "Mine-b", "book-open")
+	subB := catalogSubjectID(t, ts, tokenB, "math")
 	id := createSession(t, ts, tokenB, subB, "2026-07-31T09:00:00", "2026-07-31T10:00:00")
 
 	req, _ := http.NewRequest(http.MethodPut, ts.URL+"/api/v1/sessions/"+strconvFormatInt(id),
-		strings.NewReader(`{"subject_id":`+strconvFormatInt(subA)+`,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`))
+		strings.NewReader(`{"subject_id":9999,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:00:00","source":"manual"}`))
 	req.Header.Set("Authorization", "Bearer "+tokenB)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)

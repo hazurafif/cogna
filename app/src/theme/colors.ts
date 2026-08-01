@@ -11,4 +11,8 @@ export const colors = {
   danger: "#F87171",
   dangerFill: "#DC2626",
   white: "#FFFFFF",
+  authBg: "#1A1A1A",
+  authSurface: "#262626",
+  authBorder: "#383838",
+  authMuted: "#9A9A9A",
 } as const;

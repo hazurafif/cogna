@@ -51,9 +51,9 @@ func durationMinutes(startedAt, endedAt string) (int64, error) {
 }
 
 // CreateSession inserts a new session and returns it with its assigned ID, or
-// ErrSubjectNotFound when the subject does not belong to the user.
+// ErrSubjectNotFound when the subject is not in the catalog.
 func (s *Store) CreateSession(userID, subjectID int64, startedAt, endedAt, source string, note *string) (*Session, error) {
-	if _, err := s.SubjectByID(userID, subjectID); err != nil {
+	if _, err := s.SubjectByID(subjectID); err != nil {
 		if errors.Is(err, ErrSubjectNotFound) {
 			return nil, ErrSubjectNotFound
 		}
@@ -99,7 +99,6 @@ func (s *Store) CreateSession(userID, subjectID int64, startedAt, endedAt, sourc
 
 const sessionColumns = `s.id, s.user_id, s.subject_id, sub.name, sub.icon,
 	s.started_at, s.ended_at, s.duration_minutes, s.source, s.note, s.created_at`
-
 func (s *Store) scanSession(row interface{ Scan(...any) error }) (*Session, error) {
 	var sess Session
 	err := row.Scan(&sess.ID, &sess.UserID, &sess.SubjectID, &sess.SubjectName,
@@ -115,7 +114,7 @@ func (s *Store) scanSession(row interface{ Scan(...any) error }) (*Session, erro
 func (s *Store) SessionByID(userID, id int64) (*Session, error) {
 	sess, err := s.scanSession(s.db.QueryRow(
 		`SELECT `+sessionColumns+` FROM sessions s
-		 JOIN subjects sub ON sub.id = s.subject_id
+		 JOIN subject_catalog sub ON sub.id = s.subject_id
 		 WHERE s.user_id = ? AND s.id = ?`, userID, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -130,7 +129,7 @@ func (s *Store) SessionByID(userID, id int64) (*Session, error) {
 // optionally filtered by a date range on started_at and by subject.
 func (s *Store) ListSessions(userID int64, from, to string, subjectID int64) ([]Session, error) {
 	query := `SELECT ` + sessionColumns + ` FROM sessions s
-		JOIN subjects sub ON sub.id = s.subject_id
+		JOIN subject_catalog sub ON sub.id = s.subject_id
 		WHERE s.user_id = ?`
 	args := []any{userID}
 
@@ -166,9 +165,9 @@ func (s *Store) ListSessions(userID int64, from, to string, subjectID int64) ([]
 }
 
 // UpdateSession updates the user's session, or returns ErrNotFound, or
-// ErrSubjectNotFound when the new subject does not belong to the user.
+// ErrSubjectNotFound when the new subject is not in the catalog.
 func (s *Store) UpdateSession(userID, id, subjectID int64, startedAt, endedAt string, note *string) (*Session, error) {
-	if _, err := s.SubjectByID(userID, subjectID); err != nil {
+	if _, err := s.SubjectByID(subjectID); err != nil {
 		if errors.Is(err, ErrSubjectNotFound) {
 			return nil, ErrSubjectNotFound
 		}
