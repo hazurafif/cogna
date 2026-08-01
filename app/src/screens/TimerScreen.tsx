@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle } from "react-native-svg";
+import { CircleStop, CirclePlay } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
@@ -11,6 +12,11 @@ import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
 import { fontSize, spacing } from "../theme/tokens";
 import { localISO } from "../utils/time";
+
+const RING_SIZE = 240;
+const RING_STROKE = 10;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -80,6 +86,11 @@ export function TimerScreen() {
     }
   };
 
+  const running = startedAt !== null;
+  const ringProgress =
+    running ? (elapsed % (60 * 60 * 1000)) / (60 * 60 * 1000) : 0;
+  const ringDash = RING_CIRCUMFERENCE * (1 - ringProgress);
+
   return (
     <Screen title="Study timer">
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -98,17 +109,47 @@ export function TimerScreen() {
           <Text style={styles.hint}>Add a subject first (Subjects tab).</Text>
         ) : null}
 
-        {startedAt !== null ? (
-          <View style={styles.timerBox}>
-            <Ionicons name="stopwatch-outline" size={64} color={colors.primary} />
-            <Text style={styles.elapsed} testID="elapsed">
-              {formatElapsed(elapsed)}
+        <View style={styles.ringWrap}>
+          <Svg width={RING_SIZE} height={RING_SIZE}>
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_RADIUS}
+              stroke={colors.surfaceElevated}
+              strokeWidth={RING_STROKE}
+              fill="none"
+            />
+            {running ? (
+              <Circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RING_RADIUS}
+                stroke={colors.primary}
+                strokeWidth={RING_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                strokeDashoffset={ringDash}
+                fill="none"
+                transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+              />
+            ) : null}
+          </Svg>
+          <View style={styles.ringInner}>
+            {running ? (
+              <CircleStop size={40} strokeWidth={1.8} color={colors.primary} />
+            ) : (
+              <CirclePlay size={40} strokeWidth={1.8} color={colors.primary} />
+            )}
+            <Text style={[styles.elapsed, !running && styles.elapsedIdle]} testID="elapsed">
+              {running ? formatElapsed(elapsed) : "00:00:00"}
             </Text>
             <Text style={styles.runningLabel}>
-              {subjects.find((s) => s.id === subjectId)?.name ?? ""} · timer running
+              {running
+                ? `${subjects.find((s) => s.id === subjectId)?.name ?? ""} · timer running`
+                : "Pick a subject to begin"}
             </Text>
           </View>
-        ) : null}
+        </View>
 
         <View style={styles.actions}>
           <Button
@@ -133,17 +174,33 @@ export function TimerScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg, paddingBottom: spacing.xl },
-  subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  content: { gap: spacing.lg, paddingBottom: spacing.xl, alignItems: "center" },
+  subjectRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "center",
+  },
   hint: { color: colors.textMuted, fontSize: fontSize.body },
-  timerBox: { alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
+  ringWrap: {
+    marginTop: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringInner: {
+    position: "absolute",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   elapsed: {
-    fontSize: fontSize.hero,
-    fontWeight: "700",
+    fontSize: 38,
+    fontWeight: "800",
+    letterSpacing: -1,
     color: colors.text,
     fontVariant: ["tabular-nums"],
   },
+  elapsedIdle: { color: colors.textSecondary },
   runningLabel: { color: colors.textSecondary, fontSize: fontSize.caption },
-  actions: { gap: spacing.md, marginTop: spacing.md },
+  actions: { gap: spacing.md, marginTop: spacing.sm, width: "100%" },
   error: { color: colors.danger, fontSize: fontSize.body },
 });

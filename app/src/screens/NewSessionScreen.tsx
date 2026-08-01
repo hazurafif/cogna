@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { CalendarDays, Timer, PencilLine } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
@@ -91,6 +92,7 @@ export function NewSessionScreen() {
     <Screen title={isEdit ? "Edit session" : "Log a session"}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.fieldLabel}>Subject</Text>
         <View style={styles.subjectRow}>
           {subjects.map((s) => (
             <Chip
@@ -101,28 +103,37 @@ export function NewSessionScreen() {
             />
           ))}
         </View>
-        <TextInput
-          style={styles.input}
-          placeholder="Date (YYYY-MM-DD)"
-          placeholderTextColor={colors.textMuted}
-          value={date}
-          onChangeText={setDate}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Minutes"
-          placeholderTextColor={colors.textMuted}
-          value={minutes}
-          onChangeText={setMinutes}
-          keyboardType="number-pad"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Note (optional)"
-          placeholderTextColor={colors.textMuted}
-          value={note}
-          onChangeText={setNote}
-        />
+        <View style={styles.inputWrap}>
+          <CalendarDays size={16} strokeWidth={2.2} color={colors.textMuted} />
+          <TextInput
+            style={styles.input}
+            placeholder="Date (YYYY-MM-DD)"
+            placeholderTextColor={colors.textMuted}
+            value={date}
+            onChangeText={setDate}
+          />
+        </View>
+        <View style={styles.inputWrap}>
+          <Timer size={16} strokeWidth={2.2} color={colors.textMuted} />
+          <TextInput
+            style={styles.input}
+            placeholder="Minutes"
+            placeholderTextColor={colors.textMuted}
+            value={minutes}
+            onChangeText={setMinutes}
+            keyboardType="number-pad"
+          />
+        </View>
+        <View style={styles.inputWrap}>
+          <PencilLine size={16} strokeWidth={2.2} color={colors.textMuted} />
+          <TextInput
+            style={styles.input}
+            placeholder="Note (optional)"
+            placeholderTextColor={colors.textMuted}
+            value={note}
+            onChangeText={setNote}
+          />
+        </View>
         <Button
           title="Save session"
           onPress={onSave}
@@ -137,13 +148,28 @@ export function NewSessionScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
+  fieldLabel: {
+    fontSize: fontSize.caption,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: spacing.sm,
+  },
   subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  input: {
-    backgroundColor: colors.surface,
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.md,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: spacing.md,
     fontSize: fontSize.body,
     color: colors.text,
   },

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Clock, CalendarDays } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
@@ -7,7 +8,7 @@ import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { SubjectDot } from "../components/SubjectDot";
 import { colors } from "../theme/colors";
-import { fontSize, spacing } from "../theme/tokens";
+import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
 
 export function SessionDetailScreen() {
@@ -57,17 +58,25 @@ export function SessionDetailScreen() {
     <Screen>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.subjectRow}>
-          <SubjectDot color={session.subject_color} size={14} />
-          <Text style={styles.subjectName}>{session.subject_name}</Text>
+        <View style={[styles.hero, { borderColor: `${session.subject_color}55` }]}>
+          <View style={[styles.heroGlow, { backgroundColor: `${session.subject_color}22` }]} />
+          <View style={styles.subjectRow}>
+            <SubjectDot color={session.subject_color} size={14} />
+            <Text style={styles.subjectName}>{session.subject_name}</Text>
+          </View>
+          <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <CalendarDays size={13} strokeWidth={2.2} color={colors.textSecondary} />
+              <Text style={styles.meta}>{session.started_at}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Clock size={13} strokeWidth={2.2} color={colors.textSecondary} />
+              <Text style={styles.meta}>{session.duration_minutes} minutes</Text>
+            </View>
+            <Text style={styles.meta}>{session.source}</Text>
+          </View>
         </View>
-        <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
-        <Text style={styles.meta}>
-          {session.started_at} → {session.ended_at}
-        </Text>
-        <Text style={styles.meta}>
-          {session.source} · {session.duration_minutes} minutes
-        </Text>
         {session.note ? <Text style={styles.note}>{session.note}</Text> : null}
         <View style={styles.actions}>
           <Button
@@ -90,17 +99,45 @@ export function SessionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.md },
+  content: { gap: spacing.md, paddingBottom: spacing.xl },
+  hero: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
+    overflow: "hidden",
+  },
+  heroGlow: {
+    position: "absolute",
+    top: -60,
+    right: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+  },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  subjectName: { fontSize: fontSize.title, fontWeight: "600", color: colors.text },
+  subjectName: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
   duration: {
     fontSize: 40,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: -1.5,
     color: colors.text,
     fontVariant: ["tabular-nums"],
   },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.md, marginTop: 4 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   meta: { fontSize: fontSize.caption, color: colors.textSecondary },
-  note: { fontSize: fontSize.body, color: colors.text, marginTop: spacing.sm },
+  note: {
+    fontSize: fontSize.body,
+    color: colors.text,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginTop: spacing.sm,
+  },
   actions: { gap: spacing.md, marginTop: spacing.xl },
   error: { color: colors.danger, fontSize: fontSize.body },
 });

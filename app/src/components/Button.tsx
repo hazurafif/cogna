@@ -15,8 +15,15 @@ type ButtonProps = {
 };
 
 const variantStyles = {
-  primary: { backgroundColor: colors.primary },
-  outline: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+  primary: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  outline: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderWidth: 1 },
   danger: { backgroundColor: colors.dangerFill },
 } as const;
 
@@ -35,7 +42,12 @@ export function Button({
       onPress={onPress}
       disabled={blocked}
       accessibilityState={{ disabled: blocked }}
-      style={[styles.base, variantStyles[variant], blocked && styles.blocked]}
+      style={({ pressed }) => [
+        styles.base,
+        variantStyles[variant],
+        blocked && styles.blocked,
+        pressed && !blocked && styles.pressed,
+      ]}
     >
       {loading ? (
         <ActivityIndicator
@@ -52,13 +64,14 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.full,
-    minHeight: 48,
+    minHeight: 50,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 14,
   },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   blocked: { opacity: 0.5 },
-  label: { color: colors.white, fontSize: fontSize.title, fontWeight: "600" },
+  label: { color: colors.white, fontSize: fontSize.title, fontWeight: "700", letterSpacing: 0.2 },
   outlineLabel: { color: colors.text },
 });

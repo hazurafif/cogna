@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Plus, ChevronRight } from "lucide-react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
 import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
-import { fontSize, radius, spacing } from "../theme/tokens";
+import { fontSize, radius, shadow, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
 
 function formatDay(startedAt: string): string {
@@ -37,8 +37,11 @@ export function HistoryScreen() {
   return (
     <Screen title="History">
       <View style={styles.header}>
+        <Text style={styles.count}>{sessions.length} sessions</Text>
         <Pressable onPress={() => router.push("/session/new")} style={styles.addLink}>
-          <Ionicons name="add-outline" size={16} color={colors.primary} />
+          <View style={styles.addIcon}>
+            <Plus size={14} strokeWidth={3} color={colors.primary} />
+          </View>
           <Text style={styles.addText}>Log manually</Text>
         </Pressable>
       </View>
@@ -46,10 +49,14 @@ export function HistoryScreen() {
       <FlatList
         data={sessions}
         keyExtractor={(s) => String(s.id)}
+        contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => router.push(`/session/${item.id}`)}>
-            <View style={styles.iconChip}>
-              <Ionicons name="time-outline" size={18} color={item.subject_color} />
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => router.push(`/session/${item.id}`)}
+          >
+            <View style={[styles.iconChip, { backgroundColor: `${item.subject_color}22` }]}>
+              <View style={[styles.iconDot, { backgroundColor: item.subject_color }]} />
             </View>
             <View style={styles.rowBody}>
               <Text style={styles.rowName}>{item.subject_name}</Text>
@@ -58,6 +65,7 @@ export function HistoryScreen() {
               </Text>
             </View>
             <Text style={styles.rowDuration}>{formatDuration(item.duration_minutes)}</Text>
+            <ChevronRight size={16} strokeWidth={2.2} color={colors.textMuted} />
           </Pressable>
         )}
       />
@@ -66,31 +74,49 @@ export function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center" },
-  addLink: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  addText: { color: colors.primary, fontWeight: "600", fontSize: fontSize.body },
-  iconChip: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  count: { fontSize: fontSize.caption, color: colors.textMuted },
+  addLink: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  addIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
+  addText: { color: colors.primary, fontWeight: "700", fontSize: fontSize.body },
+  list: { gap: spacing.sm, paddingBottom: spacing.xl },
+  iconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconDot: { width: 14, height: 14, borderRadius: radius.full },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    ...shadow.card,
   },
+  rowPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
   rowBody: { flex: 1 },
-  rowName: { fontSize: fontSize.body, fontWeight: "600", color: colors.text },
+  rowName: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
   rowMeta: { fontSize: fontSize.caption, color: colors.textSecondary, marginTop: 2 },
   rowDuration: {
     fontSize: fontSize.body,
-    fontWeight: "700",
+    fontWeight: "800",
     color: colors.text,
     fontVariant: ["tabular-nums"],
   },

@@ -1,6 +1,7 @@
 export const radius = {
   sm: 10,
   md: 14,
+  lg: 20,
   full: 999,
 } as const;
 
@@ -19,4 +20,14 @@ export const fontSize = {
   title: 16,
   heading: 24,
   hero: 44,
+} as const;
+
+export const shadow = {
+  card: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
 } as const;

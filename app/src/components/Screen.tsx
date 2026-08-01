@@ -24,5 +24,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
-  title: { fontSize: fontSize.heading, fontWeight: "700", color: colors.text },
+  title: {
+    fontSize: fontSize.heading,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    color: colors.text,
+  },
 });

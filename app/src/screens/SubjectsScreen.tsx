@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Trash, Plus, Check } from "lucide-react-native";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { createSubject, deleteSubject, listSubjects, Subject } from "../api/subjects";
@@ -61,21 +61,32 @@ export function SubjectsScreen() {
     <Screen title="Subjects">
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Card>
-        <TextInput
-          style={styles.input}
-          placeholder="Subject name"
-          placeholderTextColor={colors.textMuted}
-          value={name}
-          onChangeText={setName}
-        />
+        <View style={styles.inputWrap}>
+          <View style={styles.inputIcon}>
+            <Plus size={16} strokeWidth={2.5} color={colors.textMuted} />
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Subject name"
+            placeholderTextColor={colors.textMuted}
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
         <View style={styles.palette}>
           {colors.subjects.map((c) => (
             <Pressable
               key={c}
               testID={`color-${c}`}
               onPress={() => setColor(c)}
-              style={[styles.swatch, { backgroundColor: c }, color === c && styles.swatchActive]}
-            />
+              style={[
+                styles.swatch,
+                { backgroundColor: c },
+                color === c && styles.swatchActive,
+              ]}
+            >
+              {color === c ? <Check size={16} strokeWidth={3} color={colors.white} /> : null}
+            </Pressable>
           ))}
         </View>
         <Button title="Add" onPress={onAdd} disabled={!name.trim()} />
@@ -83,16 +94,19 @@ export function SubjectsScreen() {
       <FlatList
         data={subjects}
         keyExtractor={(s) => String(s.id)}
+        contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <SubjectDot color={item.color} />
+            <SubjectDot color={item.color} size={10} />
             <Text style={styles.rowName}>{item.name}</Text>
             <Pressable
               testID={`delete-${item.id}`}
               accessibilityLabel={`Delete ${item.name}`}
               onPress={() => onDelete(item.id)}
+              hitSlop={10}
+              style={styles.deleteBtn}
             >
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+              <Trash size={16} strokeWidth={2.2} color={colors.danger} />
             </Pressable>
           </View>
         )}
@@ -102,26 +116,53 @@ export function SubjectsScreen() {
 }
 
 const styles = StyleSheet.create({
-  input: {
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     backgroundColor: colors.bg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.md,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+  },
+  inputIcon: { opacity: 0.8 },
+  input: {
+    flex: 1,
+    paddingVertical: spacing.md,
     fontSize: fontSize.body,
     color: colors.text,
   },
-  palette: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  swatch: { width: 32, height: 32, borderRadius: 16 },
-  swatchActive: { borderWidth: 3, borderColor: colors.text },
+  palette: { flexDirection: "row", gap: spacing.md, marginTop: spacing.md, justifyContent: "space-between" },
+  swatch: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  swatchActive: {
+    transform: [{ scale: 1.12 }],
+    borderWidth: 2,
+    borderColor: colors.text,
+  },
+  list: { gap: spacing.xs, paddingBottom: spacing.xl },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  rowName: { flex: 1, fontSize: fontSize.body, color: colors.text },
+  rowName: { flex: 1, fontSize: fontSize.body, fontWeight: "600", color: colors.text },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    backgroundColor: "rgba(248, 113, 113, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   error: { color: colors.danger, fontSize: fontSize.body },
 });
