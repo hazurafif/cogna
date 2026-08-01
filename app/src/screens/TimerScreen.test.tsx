@@ -26,7 +26,7 @@ describe("TimerScreen", () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ token: "tok" });
     mockListSubjects.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", color: "#4F46E5", created_at: "" },
+      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
     ]);
   });
 
@@ -75,6 +75,23 @@ describe("TimerScreen", () => {
     await fireEvent.press(getByTestId("start-button"));
 
     expect(getByTestId("start-button").props.accessibilityState.disabled).toBe(true);
+  });
+
+  it("celebrates and navigates to history after a successful save", async () => {
+    mockCreateSession.mockResolvedValue({ id: 9 });
+
+    const { getByText, getByTestId } = await render(<TimerScreen />);
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.press(getByTestId("start-button"));
+    await fireEvent.press(getByTestId("stop-button"));
+
+    await waitFor(() => expect(getByText("Session saved!")).toBeTruthy());
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
+    expect(require("expo-router").router.push).toHaveBeenCalledWith("/(tabs)/history");
   });
 
   it("keeps ticking and allows a retry after a failed save", async () => {

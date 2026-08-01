@@ -16,12 +16,6 @@ describe("theme tokens", () => {
     expect(colors.white).toBe("#FFFFFF");
   });
 
-  it("defines six subject accents", () => {
-    expect(colors.subjects).toEqual([
-      "#FC4C02", "#22C55E", "#38BDF8", "#8B5CF6", "#F59E0B", "#F43F5E",
-    ]);
-  });
-
   it("defines radii, spacing and font sizes", () => {
     expect(radius).toEqual({ sm: 10, md: 14, lg: 20, full: 999 });
     expect(spacing).toEqual({ xs: 4, sm: 8, md: 12, lg: 16, xl: 24 });

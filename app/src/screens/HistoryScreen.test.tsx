@@ -26,12 +26,12 @@ describe("HistoryScreen", () => {
   it("renders sessions newest first with subject and duration", async () => {
     mockListSessions.mockResolvedValue([
       {
-        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_color: "#10B981",
+        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_icon: "flask-conical",
         started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
         duration_minutes: 60, source: "timer", note: null, created_at: "",
       },
       {
-        id: 1, user_id: 1, subject_id: 2, subject_name: "Math", subject_color: "#4F46E5",
+        id: 1, user_id: 1, subject_id: 2, subject_name: "Math", subject_icon: "book-open",
         started_at: "2026-07-30T09:00:00", ended_at: "2026-07-30T09:45:00",
         duration_minutes: 45, source: "manual", note: null, created_at: "",
       },
@@ -46,7 +46,7 @@ describe("HistoryScreen", () => {
   it("navigates to a session on press", async () => {
     mockListSessions.mockResolvedValue([
       {
-        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_color: "#10B981",
+        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_icon: "flask-conical",
         started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
         duration_minutes: 60, source: "timer", note: null, created_at: "",
       },
@@ -69,7 +69,7 @@ describe("HistoryScreen", () => {
   it("shows no error after a successful load", async () => {
     mockListSessions.mockResolvedValue([
       {
-        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_color: "#10B981",
+        id: 2, user_id: 1, subject_id: 1, subject_name: "Biology", subject_icon: "flask-conical",
         started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
         duration_minutes: 60, source: "timer", note: null, created_at: "",
       },

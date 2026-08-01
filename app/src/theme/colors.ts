@@ -11,5 +11,4 @@ export const colors = {
   danger: "#F87171",
   dangerFill: "#DC2626",
   white: "#FFFFFF",
-  subjects: ["#FC4C02", "#22C55E", "#38BDF8", "#8B5CF6", "#F59E0B", "#F43F5E"] as const,
 } as const;

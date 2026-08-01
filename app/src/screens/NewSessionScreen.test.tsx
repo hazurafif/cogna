@@ -29,7 +29,7 @@ describe("NewSessionScreen", () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ token: "tok" });
     mockListSubjects.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", color: "#4F46E5", created_at: "" },
+      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("NewSessionScreen", () => {
   it("prefills and updates an existing session in edit mode", async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: "5" });
     mockGetSession.mockResolvedValue({
-      id: 5, user_id: 1, subject_id: 1, subject_name: "Math", subject_color: "#4F46E5",
+      id: 5, user_id: 1, subject_id: 1, subject_name: "Math", subject_icon: "book-open",
       started_at: "2026-07-30T09:00:00", ended_at: "2026-07-30T09:45:00",
       duration_minutes: 45, source: "manual", note: "revision", created_at: "",
     });

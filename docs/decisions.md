@@ -59,3 +59,11 @@ decisions as they are made; never rewrite history.
   its CJS build (`moduleNameMapper` in `app/package.json`) because the `react-native` export
   condition resolves to an untransformed `.mjs`; `transformIgnorePatterns` extends the jest-expo
   default with `lucide-react-native`.
+- **Subjects use icons, not colors** — subjects carry an `icon` (kebab-case name from a fixed
+  catalog in `app/src/constants/subjectIcons.ts`) instead of a hex `color`. The API validates
+  `^[a-z0-9-]{1,40}$`; migration `0002` adds `subjects.icon` (default `book-open`) and drops
+  `subjects.color`. The app renders icons via `SubjectIcon` (lookup falls back to `book-open`);
+  per-subject bars/detail chrome use the single brand accent.
+- **React Compiler lint** — `react-hooks/static-components` forbids resolving a component during
+  render; `SubjectIcon` builds its element with `createElement` so the icon lookup is not treated
+  as component creation.

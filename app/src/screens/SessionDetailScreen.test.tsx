@@ -30,7 +30,7 @@ describe("SessionDetailScreen", () => {
 
   it("loads and shows session details", async () => {
     mockGetSession.mockResolvedValue({
-      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_icon: "flask-conical",
       started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
       duration_minutes: 60, source: "timer", note: "revision", created_at: "",
     });
@@ -43,7 +43,7 @@ describe("SessionDetailScreen", () => {
 
   it("deletes the session", async () => {
     mockGetSession.mockResolvedValue({
-      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_icon: "flask-conical",
       started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
       duration_minutes: 60, source: "timer", note: null, created_at: "",
     });
@@ -58,7 +58,7 @@ describe("SessionDetailScreen", () => {
 
   it("navigates to edit on edit press", async () => {
     mockGetSession.mockResolvedValue({
-      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_icon: "flask-conical",
       started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
       duration_minutes: 60, source: "timer", note: null, created_at: "",
     });
@@ -72,7 +72,7 @@ describe("SessionDetailScreen", () => {
 
   it("shows an error when delete fails", async () => {
     mockGetSession.mockResolvedValue({
-      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_icon: "flask-conical",
       started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
       duration_minutes: 60, source: "timer", note: null, created_at: "",
     });
@@ -87,7 +87,7 @@ describe("SessionDetailScreen", () => {
 
   it("does not fire delete twice on double press", async () => {
     mockGetSession.mockResolvedValue({
-      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_color: "#10B981",
+      id: 2, user_id: 1, subject_id: 1, subject_name: "History", subject_icon: "flask-conical",
       started_at: "2026-07-31T09:00:00", ended_at: "2026-07-31T10:00:00",
       duration_minutes: 60, source: "timer", note: null, created_at: "",
     });

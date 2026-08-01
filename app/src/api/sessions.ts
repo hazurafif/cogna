@@ -5,7 +5,7 @@ export type StudySession = {
   user_id: number;
   subject_id: number;
   subject_name: string;
-  subject_color: string;
+  subject_icon: string;
   started_at: string;
   ended_at: string;
   duration_minutes: number;

@@ -30,8 +30,8 @@ describe("SubjectsScreen", () => {
 
   it("loads and renders subjects", async () => {
     mockList.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", color: "#4F46E5", created_at: "" },
-      { id: 2, user_id: 1, name: "History", color: "#10B981", created_at: "" },
+      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
+      { id: 2, user_id: 1, name: "History", icon: "flask-conical", created_at: "" },
     ]);
 
     const { getByText } = await render(<SubjectsScreen />);
@@ -42,21 +42,22 @@ describe("SubjectsScreen", () => {
   it("creates a subject", async () => {
     mockList.mockResolvedValue([]);
     mockCreate.mockResolvedValue({
-      id: 3, user_id: 1, name: "Physics", color: "#F59E0B", created_at: "",
+      id: 3, user_id: 1, name: "Physics", icon: "atom", created_at: "",
     });
 
-    const { getByPlaceholderText, getByText } = await render(<SubjectsScreen />);
+    const { getByPlaceholderText, getByText, getByTestId } = await render(<SubjectsScreen />);
     await fireEvent.changeText(getByPlaceholderText("Subject name"), "Physics");
+    await fireEvent.press(getByTestId("icon-atom"));
     await fireEvent.press(getByText("Add"));
 
     await waitFor(() =>
-      expect(mockCreate).toHaveBeenCalledWith("tok", "Physics", expect.any(String)),
+      expect(mockCreate).toHaveBeenCalledWith("tok", "Physics", "atom"),
     );
   });
 
   it("deletes a subject", async () => {
     mockList.mockResolvedValue([
-      { id: 1, user_id: 1, name: "Math", color: "#4F46E5", created_at: "" },
+      { id: 1, user_id: 1, name: "Math", icon: "book-open", created_at: "" },
     ]);
     mockDelete.mockResolvedValue(undefined);
 

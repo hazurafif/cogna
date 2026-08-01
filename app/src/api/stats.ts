@@ -3,7 +3,7 @@ import { api } from "./client";
 export type SubjectTotal = {
   subject_id: number;
   name: string;
-  color: string;
+  icon: string;
   minutes: number;
 };
 

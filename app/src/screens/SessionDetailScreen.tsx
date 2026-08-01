@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
-import { SubjectDot } from "../components/SubjectDot";
+import { SubjectIcon } from "../components/SubjectIcon";
 import { colors } from "../theme/colors";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
@@ -58,10 +58,10 @@ export function SessionDetailScreen() {
     <Screen>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.hero, { borderColor: `${session.subject_color}55` }]}>
-          <View style={[styles.heroGlow, { backgroundColor: `${session.subject_color}22` }]} />
+        <View style={styles.hero}>
+          <View style={styles.heroGlow} />
           <View style={styles.subjectRow}>
-            <SubjectDot color={session.subject_color} size={14} />
+            <SubjectIcon name={session.subject_icon} size={16} />
             <Text style={styles.subjectName}>{session.subject_name}</Text>
           </View>
           <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
@@ -102,6 +102,8 @@ const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
   hero: {
     borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     padding: spacing.xl,
     paddingBottom: spacing.lg,
@@ -115,6 +117,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
+    backgroundColor: colors.primarySoft,
   },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   subjectName: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },

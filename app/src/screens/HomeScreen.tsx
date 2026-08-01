@@ -1,16 +1,24 @@
 import React, { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { RefreshCw, Clock, CalendarDays, Flame, LogOut } from "lucide-react-native";
+import { RefreshCw, Clock, CalendarDays, Flame, LogOut, Target } from "lucide-react-native";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { fetchSummary, Summary } from "../api/stats";
+import { listSessions, StudySession } from "../api/sessions";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { StatCard } from "../components/StatCard";
-import { SubjectDot } from "../components/SubjectDot";
+import { SubjectIcon } from "../components/SubjectIcon";
 import { colors } from "../theme/colors";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
+import {
+  buildActivityWeek,
+  DAILY_GOAL_MINUTES,
+  streakCopy,
+  streakMilestone,
+  todayMinutes,
+} from "../utils/daily";
 
 function initialOf(email: string): string {
   return email.trim().charAt(0).toUpperCase() || "?";
@@ -19,6 +27,7 @@ function initialOf(email: string): string {
 export function HomeScreen() {
   const { token, user, logout } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -29,6 +38,11 @@ export function HomeScreen() {
     } catch {
       setError("Could not load stats. Is the backend running?");
     }
+    try {
+      setSessions(await listSessions(token));
+    } catch {
+      setSessions([]);
+    }
   }, [token]);
 
   useFocusEffect(
@@ -36,6 +50,13 @@ export function HomeScreen() {
       refresh();
     }, [refresh]),
   );
+
+  const week = buildActivityWeek(sessions);
+  const maxDayMinutes = Math.max(...week.map((d) => d.minutes), 1);
+  const today = todayMinutes(sessions);
+  const goalPct = Math.min(100, Math.round((today / DAILY_GOAL_MINUTES) * 100));
+  const milestone = summary ? streakMilestone(summary.streak_days) : null;
+  const streakNote = summary ? streakCopy(summary.streak_days, sessions.length > 0) : null;
 
   return (
     <Screen>
@@ -61,20 +82,68 @@ export function HomeScreen() {
             <StatCard icon={CalendarDays} value={formatDuration(summary.week_minutes)} label="THIS WEEK" />
             <StatCard icon={Flame} value={`${summary.streak_days} days`} label="STREAK" highlighted />
           </View>
+
+          <View style={styles.streakRow}>
+            <Flame size={14} strokeWidth={2.2} color={colors.primary} />
+            <Text style={styles.streakNote}>{streakNote}</Text>
+            {milestone ? <Text style={styles.milestoneBadge}>{milestone}</Text> : null}
+          </View>
+
+          <View style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <View style={styles.goalTitleWrap}>
+                <Target size={16} strokeWidth={2.2} color={colors.primary} />
+                <Text style={styles.goalTitle}>Today{"'"}s goal</Text>
+              </View>
+              <Text style={styles.goalValue}>
+                {formatMinutes(today)} <Text style={styles.goalOf}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
+              </Text>
+            </View>
+            <View style={styles.goalTrack}>
+              <View style={[styles.goalFill, { width: `${goalPct}%` }]} />
+            </View>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Last 7 days</Text>
+            <Text style={styles.sectionHint}>{formatMinutes(today)} today</Text>
+          </View>
+          <View style={styles.weekRow}>
+            {week.map((d) => (
+              <View key={d.date} style={styles.weekDay}>
+                <Text style={[styles.weekday, d.isToday && styles.weekdayToday]}>{d.weekday}</Text>
+                <View style={styles.weekBarTrack}>
+                  <View
+                    style={[
+                      styles.weekBarFill,
+                      {
+                        backgroundColor: d.isToday ? colors.primary : colors.textSecondary,
+                        height: `${Math.max(12, (d.minutes / maxDayMinutes) * 100)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.weekMinutes, d.isToday && styles.weekMinutesToday]}>
+                  {d.minutes > 0 ? formatMinutes(d.minutes) : "–"}
+                </Text>
+              </View>
+            ))}
+          </View>
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>By subject</Text>
             <Text style={styles.sectionHint}>{summary.per_subject.length} tracked</Text>
           </View>
           {summary.per_subject.map((s) => (
             <View key={s.subject_id} style={styles.subjectRow}>
-              <SubjectDot color={s.color} size={10} />
+              <SubjectIcon name={s.icon} size={14} />
               <Text style={styles.subjectName}>{s.name}</Text>
               <View style={styles.subjectBarTrack}>
                 <View
                   style={[
                     styles.subjectBarFill,
                     {
-                      backgroundColor: s.color,
+                      backgroundColor: colors.primary,
                       width: `${Math.max(4, (s.minutes / Math.max(summary.total_minutes, 1)) * 100)}%`,
                     },
                   ]}
@@ -123,6 +192,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardRow: { flexDirection: "row", gap: spacing.sm },
+  streakRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  streakNote: { flex: 1, fontSize: fontSize.caption, color: colors.textSecondary },
+  milestoneBadge: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    color: colors.primary,
+    fontSize: fontSize.caption,
+    fontWeight: "700",
+    overflow: "hidden",
+  },
+  goalCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  goalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  goalTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  goalTitle: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
+  goalValue: { fontSize: fontSize.title, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
+  goalOf: { fontSize: fontSize.caption, fontWeight: "600", color: colors.textMuted },
+  goalTrack: {
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+  goalFill: { height: "100%", borderRadius: radius.full, backgroundColor: colors.primary },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -131,6 +232,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: fontSize.title, fontWeight: "700", color: colors.text, letterSpacing: -0.3 },
   sectionHint: { fontSize: fontSize.caption, color: colors.textMuted },
+  weekRow: { flexDirection: "row", gap: spacing.sm },
+  weekDay: { flex: 1, alignItems: "center", gap: spacing.sm },
+  weekday: { fontSize: fontSize.label, fontWeight: "600", color: colors.textMuted },
+  weekdayToday: { color: colors.primary },
+  weekBarTrack: {
+    height: 64,
+    width: "100%",
+    justifyContent: "flex-end",
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.sm,
+    padding: 2,
+  },
+  weekBarFill: { width: "100%", borderRadius: radius.sm },
+  weekMinutes: { fontSize: fontSize.label, color: colors.textMuted, fontVariant: ["tabular-nums"] },
+  weekMinutesToday: { color: colors.text, fontWeight: "700" },
   subjectRow: {
     flexDirection: "row",
     alignItems: "center",

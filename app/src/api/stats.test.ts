@@ -24,7 +24,7 @@ describe("stats API", () => {
       week_minutes: 60,
       streak_days: 3,
       per_subject: [
-        { subject_id: 1, name: "Math", color: "#4F46E5", minutes: 90 },
+        { subject_id: 1, name: "Math", icon: "book-open", minutes: 90 },
       ],
     };
     mockFetch.mockResolvedValue({ ok: true, json: async () => summary });

@@ -20,10 +20,10 @@ describe("subjects API", () => {
 
   it("creates a subject", async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 1 }) });
-    await createSubject("tok", "Math", "#4F46E5");
+    await createSubject("tok", "Math", "book-open");
     const [, options] = mockFetch.mock.calls[0];
     expect(options.method).toBe("POST");
-    expect(JSON.parse(options.body)).toEqual({ name: "Math", color: "#4F46E5" });
+    expect(JSON.parse(options.body)).toEqual({ name: "Math", icon: "book-open" });
   });
 
   it("deletes a subject with DELETE", async () => {
