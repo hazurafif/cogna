@@ -8,8 +8,7 @@ decisions as they are made; never rewrite history.
 - **Stack** — Backend: Go (`chi`, `modernc.org/sqlite` pure-Go driver, JWT auth). Frontend:
   Expo React Native + TypeScript targeting iOS, Android, and web (`react-native-web`).
 - **Monorepo layout** — `backend/` and `app/` in one repo, each independently buildable/testable.
-- **Personal tracker only** — No social, goals, or challenges in v1. Scope per
-  `docs/superpowers/specs/2026-07-31-cogna-study-tracker-design.md`.
+- **Personal tracker only** — No social, goals, or challenges in v1.
 - **Session recording** — Timer-based (local timer, POST on stop) and manual entry, both through
   `POST /sessions` with a `source` field (`timer`|`manual`).
 - **One subject per session** — sessions reference exactly one subject; subject deletion is

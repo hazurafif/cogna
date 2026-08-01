@@ -10,9 +10,6 @@ specs below — don't duplicate that material here.
 - **Record decisions as you make them.** Any project-wide choice (stack, tooling, naming, process,
   architectural default, notable implementation decision) goes in [`docs/decisions.md`](docs/decisions.md)
   as part of the same change — it is the single source of truth for those.
-- **Design first.** Feature work starts from a spec in `docs/superpowers/specs/` and an implementation
-  plan in `docs/superpowers/plans/` (superpowers workflow). Follow the plan task-by-task; never skip
-  ahead or freelance beyond the current task.
 - Keep `README.md` in sync with anything a new contributor must know to run the project.
 
 ## Repo layout
@@ -73,7 +70,5 @@ specs below — don't duplicate that material here.
 
 ## Documentation map
 
-- [`docs/superpowers/specs/`](docs/superpowers/specs/) — validated design specs (one per feature).
-- [`docs/superpowers/plans/`](docs/superpowers/plans/) — implementation plans (task-by-task, TDD).
 - [`docs/decisions.md`](docs/decisions.md) — key technical and implementation decisions.
 - [`README.md`](README.md) — how to run backend + app locally.

@@ -40,5 +40,4 @@ Press `w` for web, `i` for iOS simulator. The web app expects the backend at
 
 ## Docs
 
-- Design spec: `docs/superpowers/specs/2026-07-31-cogna-study-tracker-design.md`
 - Decisions: `docs/decisions.md`
