@@ -7,16 +7,12 @@ specs below — don't duplicate that material here.
 ## Conventions
 
 - **English only.** All docs, code, comments, commit messages and identifiers are in English.
-- **Record decisions as you make them.** Any project-wide choice (stack, tooling, naming, process,
-  architectural default, notable implementation decision) goes in [`docs/decisions.md`](docs/decisions.md)
-  as part of the same change — it is the single source of truth for those.
 - Keep `README.md` in sync with anything a new contributor must know to run the project.
 
 ## Repo layout
 
 - `backend/` — Go API server (`chi`, SQLite via `modernc.org/sqlite`, JWT auth). Single binary.
 - `app/` — Expo React Native app (TypeScript), targeting iOS, Android and web (`react-native-web`).
-- `docs/` — specs, plans, decisions.
 
 ## Dev workflow
 
@@ -71,5 +67,4 @@ specs below — don't duplicate that material here.
 
 ## Documentation map
 
-- [`docs/decisions.md`](docs/decisions.md) — key technical and implementation decisions.
 - [`README.md`](README.md) — how to run backend + app locally.

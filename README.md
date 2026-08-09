@@ -39,7 +39,3 @@ entirely.
 
 - Backend: `go test ./...` (coverage gate ≥ 80%: `go test ./... -cover`)
 - App: `pnpm test` (coverage gate ≥ 80%: `pnpm test -- --coverage`)
-
-## Docs
-
-- Decisions: `docs/decisions.md`
