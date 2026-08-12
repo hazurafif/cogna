@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { CalendarDays, Timer, PencilLine } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { TextInput } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession, getSession, updateSession } from "../api/sessions";
@@ -10,7 +11,7 @@ import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
-import { fontSize, radius, spacing } from "../theme/tokens";
+import { fontSize, spacing } from "../theme/tokens";
 import { localISO, todayDate } from "../utils/time";
 
 const QUICK_MINUTES = [15, 25, 45, 60];
@@ -117,37 +118,43 @@ export function NewSessionScreen() {
             />
           ))}
         </View>
-        <View style={styles.inputWrap}>
-          <CalendarDays size={16} strokeWidth={2.2} color={colors.textMuted} />
-          <TextInput
-            style={styles.input}
-            placeholder="Date (YYYY-MM-DD)"
-            placeholderTextColor={colors.textMuted}
-            value={date}
-            onChangeText={setDate}
-          />
-        </View>
-        <View style={styles.inputWrap}>
-          <Timer size={16} strokeWidth={2.2} color={colors.textMuted} />
-          <TextInput
-            style={styles.input}
-            placeholder="Minutes"
-            placeholderTextColor={colors.textMuted}
-            value={minutes}
-            onChangeText={setMinutes}
-            keyboardType="number-pad"
-          />
-        </View>
-        <View style={styles.inputWrap}>
-          <PencilLine size={16} strokeWidth={2.2} color={colors.textMuted} />
-          <TextInput
-            style={styles.input}
-            placeholder="Note (optional)"
-            placeholderTextColor={colors.textMuted}
-            value={note}
-            onChangeText={setNote}
-          />
-        </View>
+        <TextInput
+          mode="outlined"
+          placeholder="Date (YYYY-MM-DD)"
+          placeholderTextColor={colors.textMuted}
+          value={date}
+          onChangeText={setDate}
+          left={
+            <TextInput.Icon
+              icon={({ size, color }) => <CalendarDays size={size} strokeWidth={2.2} color={color} />}
+            />
+          }
+        />
+        <TextInput
+          mode="outlined"
+          placeholder="Minutes"
+          placeholderTextColor={colors.textMuted}
+          value={minutes}
+          onChangeText={setMinutes}
+          keyboardType="number-pad"
+          left={
+            <TextInput.Icon
+              icon={({ size, color }) => <Timer size={size} strokeWidth={2.2} color={color} />}
+            />
+          }
+        />
+        <TextInput
+          mode="outlined"
+          placeholder="Note (optional)"
+          placeholderTextColor={colors.textMuted}
+          value={note}
+          onChangeText={setNote}
+          left={
+            <TextInput.Icon
+              icon={({ size, color }) => <PencilLine size={size} strokeWidth={2.2} color={color} />}
+            />
+          }
+        />
         <Button
           title="Save session"
           onPress={onSave}
@@ -171,21 +178,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.body,
-    color: colors.text,
-  },
   error: { color: colors.danger, fontSize: fontSize.body },
 });

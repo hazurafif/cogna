@@ -1,7 +1,8 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
+import { Button as PaperButton } from "react-native-paper";
 import { colors } from "../theme/colors";
-import { fontSize, radius } from "../theme/tokens";
+import { radius, spacing } from "../theme/tokens";
 
 export type ButtonVariant = "primary" | "outline" | "danger";
 
@@ -14,19 +15,12 @@ type ButtonProps = {
   testID?: string;
 };
 
-const variantStyles = {
-  primary: {
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  outline: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderWidth: 1 },
-  danger: { backgroundColor: colors.dangerFill },
-} as const;
-
+/**
+ * Cogna's Button — a Material Design 3 button (React Native Paper).
+ *
+ * The loading spinner is rendered through Paper's icon slot so it keeps a
+ * stable `button-loading` testID.
+ */
 export function Button({
   title,
   onPress,
@@ -36,42 +30,51 @@ export function Button({
   testID,
 }: ButtonProps) {
   const blocked = disabled || loading;
+  const isDanger = variant === "danger";
+  const isOutline = variant === "outline";
+  const spinnerColor = isOutline ? colors.primary : colors.white;
+
   return (
-    <Pressable
-      testID={testID ?? "button"}
+    <PaperButton
+      mode={isOutline ? "outlined" : "contained"}
       onPress={onPress}
       disabled={blocked}
-      accessibilityState={{ disabled: blocked }}
-      style={({ pressed }) => [
-        styles.base,
-        variantStyles[variant],
-        blocked && styles.blocked,
-        pressed && !blocked && styles.pressed,
-      ]}
+      loading={false}
+      testID={testID ?? "button"}
+      style={styles.button}
+      contentStyle={styles.content}
+      labelStyle={styles.label}
+      buttonColor={isDanger ? colors.dangerFill : undefined}
+      textColor={isDanger ? colors.white : undefined}
+      icon={
+        loading
+          ? () => (
+              <ActivityIndicator
+                testID="button-loading"
+                size={18}
+                color={spinnerColor}
+              />
+            )
+          : undefined
+      }
     >
-      {loading ? (
-        <ActivityIndicator
-          testID="button-loading"
-          color={variant === "outline" ? colors.primary : colors.white}
-        />
-      ) : (
-        <Text style={[styles.label, variant === "outline" && styles.outlineLabel]}>{title}</Text>
-      )}
-    </Pressable>
+      {title}
+    </PaperButton>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
+  button: {
     borderRadius: radius.full,
     minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    alignSelf: "stretch",
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  blocked: { opacity: 0.5 },
-  label: { color: colors.white, fontSize: fontSize.title, fontWeight: "700", letterSpacing: 0.2 },
-  outlineLabel: { color: colors.text },
+  content: {
+    minHeight: 50,
+    paddingHorizontal: spacing.xl,
+  },
+  label: {
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
 });

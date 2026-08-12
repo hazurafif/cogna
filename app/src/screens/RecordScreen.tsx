@@ -3,6 +3,7 @@ import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { CircleStop, CirclePlay, Flame } from "lucide-react-native";
 import { router } from "expo-router";
+import { Surface } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession } from "../api/sessions";
@@ -140,60 +141,62 @@ export function RecordScreen() {
           ))}
         </View>
 
-        <View style={styles.ringWrap}>
-          {running ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.pulseGlow,
-                {
-                  backgroundColor: ringColor,
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-          ) : null}
-          <Svg width={RING_SIZE} height={RING_SIZE}>
-            <Circle
-              cx={RING_SIZE / 2}
-              cy={RING_SIZE / 2}
-              r={RING_RADIUS}
-              stroke={colors.surfaceElevated}
-              strokeWidth={RING_STROKE}
-              fill="none"
-            />
+        <Surface style={styles.ringSurface}>
+          <View style={styles.ringWrap}>
             {running ? (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.pulseGlow,
+                  {
+                    backgroundColor: ringColor,
+                    transform: [{ scale: pulseScale }],
+                    opacity: pulseOpacity,
+                  },
+                ]}
+              />
+            ) : null}
+            <Svg width={RING_SIZE} height={RING_SIZE}>
               <Circle
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RING_RADIUS}
-                stroke={ringColor}
+                stroke={colors.surfaceElevated}
                 strokeWidth={RING_STROKE}
-                strokeLinecap="round"
-                strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-                strokeDashoffset={ringDash}
                 fill="none"
-                transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
               />
-            ) : null}
-          </Svg>
-          <View style={styles.ringInner}>
-            {running ? (
-              <CircleStop size={40} strokeWidth={1.8} color={ringColor} />
-            ) : (
-              <CirclePlay size={40} strokeWidth={1.8} color={ringColor} />
-            )}
-            <Text style={[styles.elapsed, !running && styles.elapsedIdle]} testID="elapsed">
-              {running ? formatElapsed(elapsed) : "00:00:00"}
-            </Text>
-            <Text style={styles.runningLabel}>
-              {running
-                ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · timer running`
-                : "Pick a subject to begin"}
-            </Text>
+              {running ? (
+                <Circle
+                  cx={RING_SIZE / 2}
+                  cy={RING_SIZE / 2}
+                  r={RING_RADIUS}
+                  stroke={ringColor}
+                  strokeWidth={RING_STROKE}
+                  strokeLinecap="round"
+                  strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                  strokeDashoffset={ringDash}
+                  fill="none"
+                  transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+                />
+              ) : null}
+            </Svg>
+            <View style={styles.ringInner}>
+              {running ? (
+                <CircleStop size={40} strokeWidth={1.8} color={ringColor} />
+              ) : (
+                <CirclePlay size={40} strokeWidth={1.8} color={ringColor} />
+              )}
+              <Text style={[styles.elapsed, !running && styles.elapsedIdle]} testID="elapsed">
+                {running ? formatElapsed(elapsed) : "00:00:00"}
+              </Text>
+              <Text style={styles.runningLabel}>
+                {running
+                  ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · timer running`
+                  : "Pick a subject to begin"}
+              </Text>
+            </View>
           </View>
-        </View>
+        </Surface>
 
         <View style={styles.actions}>
           <Button
@@ -243,8 +246,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "center",
   },
+  ringSurface: {
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   ringWrap: {
-    marginTop: spacing.md,
     alignItems: "center",
     justifyContent: "center",
   },

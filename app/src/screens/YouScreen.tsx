@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CalendarDays, Clock, Flame, LogOut, Trophy } from "lucide-react-native";
+import { CalendarDays, Clock, Flame, Trophy } from "lucide-react-native";
 import { useFocusEffect } from "expo-router";
+import { Avatar } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
 import { fetchSummary, Summary } from "../api/stats";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { StatCard } from "../components/StatCard";
 import { SubjectIcon } from "../components/SubjectIcon";
@@ -119,23 +121,28 @@ export function YouScreen() {
     <Screen title="You">
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user ? initialOf(user.email) : "?"}</Text>
+        <Card>
+          <View style={styles.profileRow}>
+            <Avatar.Text
+              size={52}
+              label={user ? initialOf(user.email) : "?"}
+              labelStyle={styles.avatarText}
+              style={styles.avatar}
+            />
+            <View style={styles.profileBody}>
+              <Text style={styles.email}>{user?.email ?? "—"}</Text>
+              <Text style={styles.memberSince}>
+                {user ? `Member since ${memberSince(user.created_at)}` : ""}
+              </Text>
+            </View>
+            <Button
+              title="Log out"
+              variant="outline"
+              onPress={() => logout()}
+              testID="logout-button"
+            />
           </View>
-          <View style={styles.profileBody}>
-            <Text style={styles.email}>{user?.email ?? "—"}</Text>
-            <Text style={styles.memberSince}>
-              {user ? `Member since ${memberSince(user.created_at)}` : ""}
-            </Text>
-          </View>
-          <Button
-            title="Log out"
-            variant="outline"
-            onPress={() => logout()}
-            testID="logout-button"
-          />
-        </View>
+        </Card>
 
         {summary ? (
           <View style={styles.cardRow}>
@@ -241,25 +248,13 @@ export function YouScreen() {
 const styles = StyleSheet.create({
   content: { gap: spacing.lg, paddingBottom: spacing.xl },
   error: { color: colors.danger, fontSize: fontSize.body },
-  profileCard: {
+  profileRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
   },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: colors.white, fontSize: fontSize.heading, fontWeight: "800" },
+  avatar: { backgroundColor: colors.primary },
+  avatarText: { fontSize: fontSize.heading, fontWeight: "800" },
   profileBody: { flex: 1 },
   email: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
   memberSince: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 2 },

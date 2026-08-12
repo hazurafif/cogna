@@ -5,6 +5,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { colors } from "../theme/colors";
@@ -58,25 +59,27 @@ export function SessionDetailScreen() {
     <Screen>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <View style={styles.heroGlow} />
-          <View style={styles.subjectRow}>
-            <SubjectIcon name={session.subject_icon} size={16} />
-            <Text style={styles.subjectName}>{session.subject_name}</Text>
-          </View>
-          <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <CalendarDays size={13} strokeWidth={2.2} color={colors.textSecondary} />
-              <Text style={styles.meta}>{session.started_at}</Text>
+        <Card>
+          <View style={styles.hero}>
+            <View style={styles.heroGlow} />
+            <View style={styles.subjectRow}>
+              <SubjectIcon name={session.subject_icon} size={16} />
+              <Text style={styles.subjectName}>{session.subject_name}</Text>
             </View>
-            <View style={styles.metaItem}>
-              <Clock size={13} strokeWidth={2.2} color={colors.textSecondary} />
-              <Text style={styles.meta}>{session.duration_minutes} minutes</Text>
+            <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <CalendarDays size={13} strokeWidth={2.2} color={colors.textSecondary} />
+                <Text style={styles.meta}>{session.started_at}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Clock size={13} strokeWidth={2.2} color={colors.textSecondary} />
+                <Text style={styles.meta}>{session.duration_minutes} minutes</Text>
+              </View>
+              <Text style={styles.meta}>{session.source}</Text>
             </View>
-            <Text style={styles.meta}>{session.source}</Text>
           </View>
-        </View>
+        </Card>
         {session.note ? <Text style={styles.note}>{session.note}</Text> : null}
         <View style={styles.actions}>
           <Button
@@ -101,12 +104,6 @@ export function SessionDetailScreen() {
 const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
   hero: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    paddingBottom: spacing.lg,
     gap: spacing.sm,
     overflow: "hidden",
   },

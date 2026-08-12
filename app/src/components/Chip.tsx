@@ -1,42 +1,48 @@
 import React from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
-import { CircleCheck } from "lucide-react-native";
+import { StyleSheet } from "react-native";
+import { Chip as PaperChip } from "react-native-paper";
 import { colors } from "../theme/colors";
-import { fontSize, radius } from "../theme/tokens";
+import { radius } from "../theme/tokens";
 
 type ChipProps = {
   label: string;
   selected?: boolean;
   onPress?: () => void;
+  testID?: string;
 };
 
-export function Chip({ label, selected, onPress }: ChipProps) {
+/**
+ * Cogna's Chip — a Material Design 3 filter chip (React Native Paper).
+ */
+export function Chip({ label, selected, onPress, testID }: ChipProps) {
   return (
-    <Pressable
+    <PaperChip
+      selected={selected}
       onPress={onPress}
-      style={({ pressed }) => [styles.base, selected && styles.selected, pressed && styles.pressed]}
-      accessibilityState={{ selected: !!selected }}
+      testID={testID ?? "chip"}
+      selectedColor={colors.white}
+      textStyle={selected ? { color: colors.white } : undefined}
+      style={[
+        styles.base,
+        selected ? styles.selected : styles.unselected,
+      ]}
     >
-      {selected ? <CircleCheck size={14} color={colors.white} /> : null}
-      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
-    </Pressable>
+      {label}
+    </PaperChip>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
     borderRadius: radius.full,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderWidth: 1,
   },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pressed: { opacity: 0.8 },
-  label: { color: colors.textSecondary, fontSize: fontSize.body },
-  labelSelected: { color: colors.white, fontWeight: "600" },
+  selected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  unselected: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
 });

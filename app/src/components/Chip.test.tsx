@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Chip } from "./Chip";
 
@@ -13,8 +14,6 @@ describe("Chip", () => {
   it("applies selected state", async () => {
     const { getByText } = await render(<Chip label="Math" selected />);
     const text = getByText("Math");
-    expect(text.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({ color: "#FFFFFF" })]),
-    );
+    expect(StyleSheet.flatten(text.props.style).color).toBe("#FFFFFF");
   });
 });

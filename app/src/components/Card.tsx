@@ -1,23 +1,32 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { Card as PaperCard } from "react-native-paper";
 import { colors } from "../theme/colors";
-import { radius, shadow, spacing } from "../theme/tokens";
+import { radius, spacing } from "../theme/tokens";
 
 type CardProps = {
   children: React.ReactNode;
 };
 
+/**
+ * Cogna's Card — a Material Design 3 contained card (React Native Paper).
+ */
 export function Card({ children }: CardProps) {
-  return <View style={styles.card}>{children}</View>;
+  return (
+    <PaperCard mode="contained" style={styles.card}>
+      <PaperCard.Content style={styles.content}>{children}</PaperCard.Content>
+    </PaperCard>
+  );
 }
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadow.card,
+    borderRadius: radius.lg,
+  },
+  content: {
+    padding: spacing.lg,
   },
 });

@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { Text } from "react-native-paper";
 import { colors } from "../theme/colors";
-import { fontSize, spacing } from "../theme/tokens";
+import { spacing } from "../theme/tokens";
 
 type ScreenProps = {
   title?: string;
@@ -12,7 +13,11 @@ type ScreenProps = {
 export function Screen({ title, style, children }: ScreenProps) {
   return (
     <View style={[styles.container, style]}>
-      {title ? <Text style={styles.title}>{title}</Text> : null}
+      {title ? (
+        <Text variant="headlineSmall" style={styles.title}>
+          {title}
+        </Text>
+      ) : null}
       {children}
     </View>
   );
@@ -26,7 +31,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
-    fontSize: fontSize.heading,
     fontWeight: "800",
     letterSpacing: -0.5,
     color: colors.text,

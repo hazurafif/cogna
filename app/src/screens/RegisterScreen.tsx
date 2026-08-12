@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Link, router } from "expo-router";
 import { Lock, UserRound, ArrowRight } from "lucide-react-native";
+import { TextInput } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
-import { fontSize, radius, spacing } from "../theme/tokens";
+import { fontSize, spacing } from "../theme/tokens";
 
 export function RegisterScreen() {
   const { register } = useAuth();
@@ -33,31 +34,35 @@ export function RegisterScreen() {
       <View style={styles.center}>
         <Text style={styles.title}>Create account</Text>
         <Text style={styles.subtitle}>Start your study streak today.</Text>
-        <View style={styles.inputWrap}>
-          <UserRound size={16} strokeWidth={2.2} color={colors.textMuted} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            testID="email-input"
-          />
-        </View>
-        <View style={styles.inputWrap}>
-          <Lock size={16} strokeWidth={2.2} color={colors.textMuted} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password (min 8 characters)"
-            placeholderTextColor={colors.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            testID="password-input"
-          />
-        </View>
+        <TextInput
+          mode="outlined"
+          placeholder="Email"
+          placeholderTextColor={colors.textMuted}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          testID="email-input"
+          left={
+            <TextInput.Icon
+              icon={({ size, color }) => <UserRound size={size} strokeWidth={2.2} color={color} />}
+            />
+          }
+        />
+        <TextInput
+          mode="outlined"
+          placeholder="Password (min 8 characters)"
+          placeholderTextColor={colors.textMuted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          testID="password-input"
+          left={
+            <TextInput.Icon
+              icon={({ size, color }) => <Lock size={size} strokeWidth={2.2} color={color} />}
+            />
+          }
+        />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title="Register" onPress={onSubmit} loading={submitting} />
         <Link href="/login" style={styles.link}>
@@ -83,22 +88,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     marginBottom: spacing.xl,
-  },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.body,
-    color: colors.text,
   },
   error: { color: colors.danger, fontSize: fontSize.body },
   link: {

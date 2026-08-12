@@ -1,8 +1,10 @@
 import React from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { PaperProvider } from "react-native-paper";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import { colors } from "../theme/colors";
+import { paperTheme } from "../theme/paper";
 
 function RootNavigator() {
   const { token, loading } = useAuth();
@@ -36,8 +38,10 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <PaperProvider theme={paperTheme}>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </PaperProvider>
   );
 }

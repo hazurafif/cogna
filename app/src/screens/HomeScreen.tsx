@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import { SectionList, StyleSheet, Text, View } from "react-native";
 import { RefreshCw, ChevronRight, History, Target } from "lucide-react-native";
 import { router, useFocusEffect } from "expo-router";
+import { Avatar, IconButton, List, ProgressBar } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
+import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
-import { fontSize, radius, shadow, spacing } from "../theme/tokens";
+import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
 import {
   DAILY_GOAL_MINUTES,
@@ -60,7 +62,7 @@ export function HomeScreen() {
 
   const header = (
     <View style={styles.content}>
-      <View style={styles.weekCard}>
+      <Card>
         <View style={styles.weekHeader}>
           <View>
             <Text style={styles.weekLabel}>THIS WEEK</Text>
@@ -71,9 +73,9 @@ export function HomeScreen() {
             <Text style={styles.goalDaysText}>Goal met {goalDays}/7 days</Text>
           </View>
         </View>
-      </View>
+      </Card>
 
-      <View style={styles.goalCard}>
+      <Card>
         <View style={styles.goalHeader}>
           <View style={styles.goalTitleWrap}>
             <Target size={16} strokeWidth={2.2} color={colors.primary} />
@@ -83,10 +85,12 @@ export function HomeScreen() {
             {formatMinutes(today)} <Text style={styles.goalOf}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
           </Text>
         </View>
-        <View style={styles.goalTrack}>
-          <View style={[styles.goalFill, { width: `${goalPct}%` }]} />
-        </View>
-      </View>
+        <ProgressBar
+          progress={goalPct / 100}
+          color={colors.primary}
+          style={styles.goalTrack}
+        />
+      </Card>
     </View>
   );
 
@@ -94,17 +98,26 @@ export function HomeScreen() {
     <Screen>
       <View style={styles.topRow}>
         <View style={styles.profile}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user ? initialOf(user.email) : "?"}</Text>
-          </View>
+          <Avatar.Text
+            size={42}
+            label={user ? initialOf(user.email) : "?"}
+            labelStyle={styles.avatarText}
+            style={styles.avatar}
+          />
           <View>
             <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
             <Text style={styles.greetingSub}>Ready to get back at it?</Text>
           </View>
         </View>
-        <Pressable onPress={refresh} testID="refresh-button" hitSlop={8} style={styles.refreshBtn}>
-          <RefreshCw size={18} strokeWidth={2.2} color={colors.textSecondary} />
-        </Pressable>
+        <IconButton
+          icon={({ size, color }) => (
+            <RefreshCw size={size} strokeWidth={2.2} color={color} />
+          )}
+          onPress={refresh}
+          testID="refresh-button"
+          iconColor={colors.textSecondary}
+          style={styles.refreshBtn}
+        />
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <SectionList
@@ -117,22 +130,27 @@ export function HomeScreen() {
           <Text style={styles.dayLabel}>{section.label}</Text>
         )}
         renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          <List.Item
+            title={subjectLabel(item.subject_name)}
+            titleStyle={styles.rowName}
+            description={`${formatTime(item.started_at)} · ${item.source}`}
+            descriptionStyle={styles.rowMeta}
+            left={() => (
+              <View style={styles.iconChip}>
+                <SubjectIcon name={item.subject_icon} size={16} />
+              </View>
+            )}
+            right={() => (
+              <View style={styles.rowRight}>
+                <Text style={styles.rowDuration}>
+                  {formatDuration(item.duration_minutes)}
+                </Text>
+                <ChevronRight size={16} strokeWidth={2.2} color={colors.textMuted} />
+              </View>
+            )}
             onPress={() => router.push(`/session/${item.id}`)}
-          >
-            <View style={styles.iconChip}>
-              <SubjectIcon name={item.subject_icon} size={16} />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.rowName}>{subjectLabel(item.subject_name)}</Text>
-              <Text style={styles.rowMeta}>
-                {formatTime(item.started_at)} · {item.source}
-              </Text>
-            </View>
-            <Text style={styles.rowDuration}>{formatDuration(item.duration_minutes)}</Text>
-            <ChevronRight size={16} strokeWidth={2.2} color={colors.textMuted} />
-          </Pressable>
+            style={styles.row}
+          />
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -159,33 +177,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   profile: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: colors.white, fontSize: fontSize.title, fontWeight: "800" },
+  avatar: { backgroundColor: colors.primary },
+  avatarText: { fontSize: fontSize.title, fontWeight: "800" },
   greeting: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
   greetingSub: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 1 },
   refreshBtn: {
     width: 36,
     height: 36,
-    borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  weekCard: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
   },
   weekHeader: {
     flexDirection: "row",
@@ -216,14 +217,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   goalDaysText: { color: colors.primary, fontSize: fontSize.caption, fontWeight: "700" },
-  goalCard: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
   goalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   goalTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   goalTitle: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
@@ -233,9 +226,8 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: radius.full,
     backgroundColor: colors.surface,
-    overflow: "hidden",
+    marginTop: spacing.md,
   },
-  goalFill: { height: "100%", borderRadius: radius.full, backgroundColor: colors.primary },
   dayLabel: {
     fontSize: fontSize.caption,
     fontWeight: "800",
@@ -254,21 +246,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.md,
     marginBottom: spacing.sm,
-    ...shadow.card,
   },
-  rowPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
-  rowBody: { flex: 1 },
+  rowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   rowName: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
-  rowMeta: { fontSize: fontSize.caption, color: colors.textSecondary, marginTop: 2 },
+  rowMeta: { fontSize: fontSize.caption, marginTop: 2, color: colors.textSecondary },
   rowDuration: {
     fontSize: fontSize.body,
     fontWeight: "800",
