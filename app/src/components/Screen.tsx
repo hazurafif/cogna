@@ -2,6 +2,7 @@ import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { Text } from "react-native-paper";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { spacing } from "../theme/tokens";
 
 type ScreenProps = {
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -0.5,
     color: colors.text,
   },

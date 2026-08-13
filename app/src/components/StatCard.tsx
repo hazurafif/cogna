@@ -1,7 +1,9 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "react-native-paper";
 import { LucideIcon } from "lucide-react-native";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, shadow, spacing } from "../theme/tokens";
 
 type StatCardProps = {
@@ -56,12 +58,12 @@ const styles = StyleSheet.create({
   iconBadgeHighlighted: { backgroundColor: "rgba(255, 255, 255, 0.18)" },
   value: {
     fontSize: fontSize.title,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -0.3,
     color: colors.text,
     fontVariant: ["tabular-nums"],
   },
   valueHighlighted: { color: colors.white },
-  label: { fontSize: fontSize.label, color: colors.textSecondary, fontWeight: "600" },
+  label: { fontSize: fontSize.label, color: colors.textSecondary, fontFamily: appFonts.semibold },
   labelHighlighted: { color: colors.white, opacity: 0.85 },
 });

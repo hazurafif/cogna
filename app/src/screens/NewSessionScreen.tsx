@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { CalendarDays, Timer, PencilLine } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { TextInput } from "react-native-paper";
+import { TextInput, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession, getSession, updateSession } from "../api/sessions";
@@ -11,6 +11,7 @@ import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, spacing } from "../theme/tokens";
 import { localISO, todayDate } from "../utils/time";
 
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
   fieldLabel: {
     fontSize: fontSize.caption,
-    fontWeight: "700",
+    fontFamily: appFonts.bold,
     color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.8,

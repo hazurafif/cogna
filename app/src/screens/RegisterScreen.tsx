@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Link, router } from "expo-router";
 import { Lock, UserRound, ArrowRight } from "lucide-react-native";
-import { TextInput } from "react-native-paper";
+import { TextInput, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, spacing } from "../theme/tokens";
 
 export function RegisterScreen() {
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", gap: spacing.md },
   title: {
     fontSize: 24,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -0.5,
     color: colors.text,
     textAlign: "center",
@@ -97,5 +98,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.sm,
   },
-  linkText: { color: colors.textSecondary, fontSize: fontSize.body, fontWeight: "600" },
+  linkText: { color: colors.textSecondary, fontSize: fontSize.body, fontFamily: appFonts.semibold },
 });

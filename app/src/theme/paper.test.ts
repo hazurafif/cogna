@@ -1,6 +1,7 @@
 import { MD3DarkTheme } from "react-native-paper";
 import { paperTheme } from "./paper";
 import { colors } from "./colors";
+import { appFonts } from "./fonts";
 
 describe("paper theme", () => {
   it("extends the MD3 dark theme", () => {
@@ -8,9 +9,16 @@ describe("paper theme", () => {
     expect(paperTheme.dark).toBe(true);
     expect(paperTheme.version).toBe(MD3DarkTheme.version);
     expect(paperTheme.mode).toBe(MD3DarkTheme.mode);
-    expect(paperTheme.fonts).toBe(MD3DarkTheme.fonts);
     expect(paperTheme.animation).toBe(MD3DarkTheme.animation);
     expect(paperTheme.roundness).toBe(3);
+  });
+
+  it("uses Roboto with MD3 weights", () => {
+    expect(paperTheme.fonts.bodyMedium.fontFamily).toBe(appFonts.regular);
+    expect(paperTheme.fonts.bodyMedium.fontWeight).toBe("400");
+    expect(paperTheme.fonts.labelLarge.fontFamily).toBe(appFonts.medium);
+    expect(paperTheme.fonts.labelLarge.fontWeight).toBe("500");
+    expect(paperTheme.fonts.labelSmall.fontFamily).toBe(appFonts.medium);
   });
 
   it("maps the brand palette onto Material 3 roles", () => {

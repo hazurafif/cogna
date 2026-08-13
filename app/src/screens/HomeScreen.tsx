@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from "react";
-import { SectionList, StyleSheet, Text, View } from "react-native";
+import { SectionList, StyleSheet, View } from "react-native";
 import { RefreshCw, ChevronRight, History, Target } from "lucide-react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Avatar, IconButton, List, ProgressBar } from "react-native-paper";
+import { Avatar, IconButton, List, ProgressBar, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
 import { Card } from "../components/Card";
@@ -10,6 +10,7 @@ import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
 import {
@@ -178,8 +179,8 @@ const styles = StyleSheet.create({
   },
   profile: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   avatar: { backgroundColor: colors.primary },
-  avatarText: { fontSize: fontSize.title, fontWeight: "800" },
-  greeting: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
+  avatarText: { fontSize: fontSize.title, fontFamily: appFonts.extraBold },
+  greeting: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
   greetingSub: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 1 },
   refreshBtn: {
     width: 36,
@@ -195,13 +196,13 @@ const styles = StyleSheet.create({
   },
   weekLabel: {
     fontSize: fontSize.caption,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     color: colors.textMuted,
     letterSpacing: 1,
   },
   weekValue: {
     fontSize: fontSize.heading,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     color: colors.text,
     letterSpacing: -0.5,
     marginTop: 2,
@@ -216,12 +217,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  goalDaysText: { color: colors.primary, fontSize: fontSize.caption, fontWeight: "700" },
+  goalDaysText: { color: colors.primary, fontSize: fontSize.caption, fontFamily: appFonts.bold },
   goalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   goalTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  goalTitle: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
-  goalValue: { fontSize: fontSize.title, fontWeight: "800", color: colors.text, fontVariant: ["tabular-nums"] },
-  goalOf: { fontSize: fontSize.caption, fontWeight: "600", color: colors.textMuted },
+  goalTitle: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.text },
+  goalValue: {
+    fontSize: fontSize.title,
+    fontFamily: appFonts.extraBold,
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
+  },
+  goalOf: { fontSize: fontSize.caption, fontFamily: appFonts.semibold, color: colors.textMuted },
   goalTrack: {
     height: 8,
     borderRadius: radius.full,
@@ -230,7 +236,7 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontSize: fontSize.caption,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -257,11 +263,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
-  rowName: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
+  rowName: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.text },
   rowMeta: { fontSize: fontSize.caption, marginTop: 2, color: colors.textSecondary },
   rowDuration: {
     fontSize: fontSize.body,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     color: colors.text,
     fontVariant: ["tabular-nums"],
   },
@@ -275,6 +281,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyTitle: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
+  emptyTitle: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
   emptyBody: { fontSize: fontSize.body, color: colors.textMuted, textAlign: "center" },
 });

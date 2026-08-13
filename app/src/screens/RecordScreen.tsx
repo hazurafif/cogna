@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, ScrollView, StyleSheet, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { CircleStop, CirclePlay, Flame } from "lucide-react-native";
 import { router } from "expo-router";
-import { Surface } from "react-native-paper";
+import { Surface, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession } from "../api/sessions";
@@ -12,6 +12,7 @@ import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { localISO } from "../utils/time";
 import { hapticLight, hapticSuccess } from "../utils/haptics";
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   },
   elapsed: {
     fontSize: 38,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -1,
     color: colors.text,
     fontVariant: ["tabular-nums"],
@@ -300,6 +301,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  celebrationTitle: { fontSize: fontSize.heading, fontWeight: "800", color: colors.text },
+  celebrationTitle: { fontSize: fontSize.heading, fontFamily: appFonts.extraBold, color: colors.text },
   celebrationSub: { fontSize: fontSize.body, color: colors.textSecondary },
 });

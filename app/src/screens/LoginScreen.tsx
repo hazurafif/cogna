@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Link, router } from "expo-router";
 import { BookOpen, Lock, Mail, Sparkles } from "lucide-react-native";
-import { TextInput } from "react-native-paper";
+import { TextInput, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 
 export function LoginScreen() {
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -0.8,
     color: colors.white,
     textAlign: "center",
@@ -128,6 +129,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  linkText: { color: colors.text, fontSize: fontSize.body, fontWeight: "500" },
-  linkAccent: { color: colors.primary, fontSize: fontSize.body, fontWeight: "700" },
+  linkText: { color: colors.text, fontSize: fontSize.body, fontFamily: appFonts.medium },
+  linkAccent: { color: colors.primary, fontSize: fontSize.body, fontFamily: appFonts.bold },
 });

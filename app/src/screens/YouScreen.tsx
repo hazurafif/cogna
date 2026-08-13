@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { CalendarDays, Clock, Flame, Trophy } from "lucide-react-native";
 import { useFocusEffect } from "expo-router";
-import { Avatar } from "react-native-paper";
+import { Avatar, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
 import { fetchSummary, Summary } from "../api/stats";
@@ -13,6 +13,7 @@ import { StatCard } from "../components/StatCard";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { subjectLabel } from "../constants/subjectIcons";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
 import {
@@ -254,9 +255,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   avatar: { backgroundColor: colors.primary },
-  avatarText: { fontSize: fontSize.heading, fontWeight: "800" },
+  avatarText: { fontSize: fontSize.heading, fontFamily: appFonts.extraBold },
   profileBody: { flex: 1 },
-  email: { fontSize: fontSize.body, fontWeight: "700", color: colors.text },
+  email: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.text },
   memberSince: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 2 },
   cardRow: { flexDirection: "row", gap: spacing.sm },
   streakRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     color: colors.primary,
     fontSize: fontSize.caption,
-    fontWeight: "700",
+    fontFamily: appFonts.bold,
     overflow: "hidden",
   },
   nextMilestone: { fontSize: fontSize.caption, color: colors.textMuted },
@@ -278,7 +279,12 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
     marginTop: spacing.xs,
   },
-  sectionTitle: { fontSize: fontSize.title, fontWeight: "700", color: colors.text, letterSpacing: -0.3 },
+  sectionTitle: {
+    fontSize: fontSize.title,
+    fontFamily: appFonts.bold,
+    color: colors.text,
+    letterSpacing: -0.3,
+  },
   sectionHint: { fontSize: fontSize.caption, color: colors.textMuted },
   monthCard: {
     backgroundColor: colors.surfaceElevated,
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
   },
-  monthLabel: { fontSize: fontSize.body, fontWeight: "700", color: colors.textSecondary },
+  monthLabel: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.textSecondary },
   heatWeek: { flexDirection: "row", gap: spacing.xs },
   heatCell: {
     width: 20,
@@ -302,7 +308,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
-  subjectName: { width: 90, fontSize: fontSize.body, fontWeight: "600", color: colors.text },
+  subjectName: { width: 90, fontSize: fontSize.body, fontFamily: appFonts.semibold, color: colors.text },
   subjectBarTrack: {
     flex: 1,
     height: 6,
@@ -315,7 +321,7 @@ const styles = StyleSheet.create({
     width: 44,
     textAlign: "right",
     fontSize: fontSize.body,
-    fontWeight: "700",
+    fontFamily: appFonts.bold,
     color: colors.textSecondary,
     fontVariant: ["tabular-nums"],
   },

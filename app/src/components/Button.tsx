@@ -2,6 +2,7 @@ import React from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 import { Button as PaperButton } from "react-native-paper";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { radius, spacing } from "../theme/tokens";
 
 export type ButtonVariant = "primary" | "outline" | "danger";
@@ -74,7 +75,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   label: {
-    fontWeight: "700",
+    fontFamily: appFonts.bold,
     letterSpacing: 0.2,
   },
 });

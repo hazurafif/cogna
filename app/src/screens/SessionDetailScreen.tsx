@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Clock, CalendarDays } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
 import { Button } from "../components/Button";
@@ -9,6 +10,7 @@ import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { colors } from "../theme/colors";
+import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
 
@@ -117,10 +119,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  subjectName: { fontSize: fontSize.title, fontWeight: "700", color: colors.text },
+  subjectName: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
   duration: {
     fontSize: 40,
-    fontWeight: "800",
+    fontFamily: appFonts.extraBold,
     letterSpacing: -1.5,
     color: colors.text,
     fontVariant: ["tabular-nums"],
