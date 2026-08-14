@@ -92,6 +92,104 @@ func (s *Store) studyDays(userID int64) (map[string]bool, error) {
 	return days, rows.Err()
 }
 
+// TrendPoint is a single day's study minutes within a trend window.
+type TrendPoint struct {
+	Date    string `json:"date"`
+	Minutes int64  `json:"minutes"`
+}
+
+// Trend is the per-day and per-subject breakdown for the last N days.
+type Trend struct {
+	Days                  int          `json:"days"`
+	Daily                 []TrendPoint `json:"daily"`
+	PerSubject            []SubjectTot `json:"per_subject"`
+	TotalMinutes          int64        `json:"total_minutes"`
+	LongestSessionMinutes int64        `json:"longest_session_minutes"`
+	AvgPerDayMinutes      float64      `json:"avg_per_day_minutes"`
+	BusiestHour           int          `json:"busiest_hour"` // -1 when there are no sessions
+}
+
+// Trend returns the user's per-day and per-subject minutes for the last days
+// calendar days (zero-filled), plus summary insights over that window.
+func (s *Store) Trend(userID int64, days int, now time.Time) (*Trend, error) {
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -(days - 1))
+
+	rows, err := s.db.Query(
+		`SELECT s.subject_id, sub.name, sub.icon, s.started_at, s.duration_minutes
+		 FROM sessions s JOIN subject_catalog sub ON sub.id = s.subject_id
+		 WHERE s.user_id = ? AND date(s.started_at) >= ?`,
+		userID, start.Format("2006-01-02"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("trend sessions: %w", err)
+	}
+	defer rows.Close()
+
+	daily := map[string]int64{}
+	subjects := map[int64]*SubjectTot{}
+	hourly := map[int]int64{}
+	trend := &Trend{Days: days, BusiestHour: -1}
+
+	for rows.Next() {
+		var subjectID int64
+		var name, icon, started string
+		var minutes int64
+		if err := rows.Scan(&subjectID, &name, &icon, &started, &minutes); err != nil {
+			return nil, fmt.Errorf("scan trend session: %w", err)
+		}
+		trend.TotalMinutes += minutes
+		daily[started[:10]] += minutes
+		if minutes > trend.LongestSessionMinutes {
+			trend.LongestSessionMinutes = minutes
+		}
+		if sub, ok := subjects[subjectID]; ok {
+			sub.Minutes += minutes
+		} else {
+			subjects[subjectID] = &SubjectTot{SubjectID: subjectID, Name: name, Icon: icon, Minutes: minutes}
+		}
+		if t, err := time.Parse(timeFormat, started); err == nil {
+			hourly[t.Hour()] += minutes
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("trend rows: %w", err)
+	}
+
+	for i := 0; i < days; i++ {
+		d := start.AddDate(0, 0, i)
+		key := d.Format("2006-01-02")
+		trend.Daily = append(trend.Daily, TrendPoint{Date: key, Minutes: daily[key]})
+	}
+
+	for _, sub := range subjects {
+		trend.PerSubject = append(trend.PerSubject, *sub)
+	}
+	// Stable ordering by total minutes desc, then id.
+	for i := 0; i < len(trend.PerSubject); i++ {
+		for j := i + 1; j < len(trend.PerSubject); j++ {
+			if trend.PerSubject[j].Minutes > trend.PerSubject[i].Minutes ||
+				(trend.PerSubject[j].Minutes == trend.PerSubject[i].Minutes &&
+					trend.PerSubject[j].SubjectID < trend.PerSubject[i].SubjectID) {
+				trend.PerSubject[i], trend.PerSubject[j] = trend.PerSubject[j], trend.PerSubject[i]
+			}
+		}
+	}
+
+	if trend.TotalMinutes > 0 {
+		trend.AvgPerDayMinutes = float64(trend.TotalMinutes) / float64(days)
+		busiest := -1
+		var maxMinutes int64
+		for hour, m := range hourly {
+			if m > maxMinutes || (m == maxMinutes && (busiest == -1 || hour < busiest)) {
+				busiest = hour
+				maxMinutes = m
+			}
+		}
+		trend.BusiestHour = busiest
+	}
+	return trend, nil
+}
+
 func startOfWeek(now time.Time) time.Time {
 	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	offset := (int(day.Weekday()) + 6) % 7 // Monday = 0

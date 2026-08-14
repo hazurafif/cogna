@@ -47,7 +47,7 @@ describe("RecordScreen", () => {
   });
 
   it("starts, ticks, and stops a session", async () => {
-    mockCreateSession.mockResolvedValue({ id: 9 });
+    mockCreateSession.mockResolvedValue({ session: { id: 9 }, new_achievements: [] });
 
     const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
@@ -79,14 +79,51 @@ describe("RecordScreen", () => {
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
-  it("disables the start button while a run is in progress", async () => {
+  it("replaces the start button with pause while running", async () => {
+    const { getByText, getByTestId, queryByTestId } = await renderScreen();
+    await waitFor(() => expect(getByText("Math")).toBeTruthy());
+
+    await fireEvent.press(getByText("Math"));
+    await fireEvent.press(getByTestId("start-button"));
+
+    expect(queryByTestId("start-button")).toBeNull();
+    expect(getByTestId("pause-button")).toBeTruthy();
+  });
+
+  it("pauses and resumes while keeping the elapsed total", async () => {
+    mockCreateSession.mockResolvedValue({ session: { id: 9 }, new_achievements: [] });
+
     const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
     await fireEvent.press(getByTestId("start-button"));
 
-    expect(getByTestId("start-button").props.accessibilityState.disabled).toBe(true);
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    await fireEvent.press(getByTestId("pause-button"));
+    const paused = getByTestId("elapsed").props.children;
+
+    await act(async () => {
+      jest.advanceTimersByTime(120_000);
+    });
+    expect(getByTestId("elapsed").props.children).toBe(paused);
+    expect(getByTestId("resume-button")).toBeTruthy();
+
+    await fireEvent.press(getByTestId("resume-button"));
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    expect(getByTestId("elapsed").props.children).not.toBe(paused);
+
+    await fireEvent.press(getByTestId("stop-button"));
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        "tok",
+        expect.objectContaining({ subject_id: 1, source: "timer" }),
+      );
+    });
   });
 
   it("opens the manual log from the secondary action", async () => {
@@ -96,7 +133,7 @@ describe("RecordScreen", () => {
   });
 
   it("celebrates and navigates home after a successful save", async () => {
-    mockCreateSession.mockResolvedValue({ id: 9 });
+    mockCreateSession.mockResolvedValue({ session: { id: 9 }, new_achievements: [] });
 
     const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
@@ -135,7 +172,7 @@ describe("RecordScreen", () => {
 
   it("keeps ticking and allows a retry after a failed save", async () => {
     mockCreateSession.mockRejectedValueOnce(new Error("boom"));
-    mockCreateSession.mockResolvedValueOnce({ id: 9 });
+    mockCreateSession.mockResolvedValueOnce({ session: { id: 9 }, new_achievements: [] });
 
     const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());

@@ -5,9 +5,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession, getSession, updateSession } from "../api/sessions";
+import { Achievement } from "../api/achievements";
 import { Button } from "../components/Button";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
+import { UnlockOverlay } from "../components/UnlockOverlay";
 import { subjectLabel } from "../constants/subjectIcons";
 import { GroupedInput, GroupedInputItem } from "../components/ui/input";
 import { ScrollView } from "../components/ui/scroll-view";
@@ -33,6 +35,7 @@ export function NewSessionScreen() {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [unlocked, setUnlocked] = useState<Achievement[]>([]);
 
   const mutedColor = useColor("textMuted");
   const iconColor = useColor("icon");
@@ -92,11 +95,14 @@ export function NewSessionScreen() {
         note: note.trim() || null,
       };
       if (isEdit && id) {
-        await updateSession(token, Number(id), payload);
+        const res = await updateSession(token, Number(id), payload);
+        setUnlocked(res.new_achievements);
+        if (res.new_achievements.length === 0) router.back();
       } else {
-        await createSession(token, payload);
+        const res = await createSession(token, payload);
+        setUnlocked(res.new_achievements);
+        if (res.new_achievements.length === 0) router.back();
       }
-      router.back();
     } catch {
       setError("Could not save session.");
       setSaving(false);
@@ -174,6 +180,9 @@ export function NewSessionScreen() {
           testID="save-button"
         />
       </ScrollView>
+      {unlocked.length > 0 ? (
+        <UnlockOverlay achievements={unlocked} onDone={() => router.back()} />
+      ) : null}
     </Screen>
   );
 }

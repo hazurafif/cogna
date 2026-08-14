@@ -148,8 +148,8 @@ func TestMigrateIdempotentAcrossFileReopen(t *testing.T) {
 	if err := s2.db.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&n); err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	if n != 3 {
-		t.Fatalf("migrations recorded = %d, want 3", n)
+	if n != 6 {
+		t.Fatalf("migrations recorded = %d, want 6", n)
 	}
 }
 
@@ -241,7 +241,7 @@ func TestMigrateUpgradesPreIconDatabase(t *testing.T) {
 	if len(subs) != 11 {
 		t.Fatalf("catalog = %d entries, want 11", len(subs))
 	}
-	sess, err := s.ListSessions(1, "", "", 0)
+	sess, _, err := s.ListSessions(1, SessionFilter{})
 	if err != nil {
 		t.Fatalf("list sessions: %v", err)
 	}

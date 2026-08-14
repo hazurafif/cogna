@@ -120,7 +120,11 @@ export function weekMinutes(sessions: StudySession[], now = new Date()): number 
   );
 }
 
-export function goalDaysThisWeek(sessions: StudySession[], now = new Date()): number {
+export function goalDaysThisWeek(
+  sessions: StudySession[],
+  goalMinutes = DAILY_GOAL_MINUTES,
+  now = new Date(),
+): number {
   const start = startOfWeek(now);
   const startKey = dayKey(start);
   const endKey = dayKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7));
@@ -133,7 +137,7 @@ export function goalDaysThisWeek(sessions: StudySession[], now = new Date()): nu
   }
   let met = 0;
   for (const minutes of perDay.values()) {
-    if (minutes >= DAILY_GOAL_MINUTES) met++;
+    if (minutes >= goalMinutes) met++;
   }
   return met;
 }

@@ -1,10 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet, View as RNView } from "react-native";
-import { CalendarDays, Clock, Flame, Trophy } from "lucide-react-native";
-import { useFocusEffect } from "expo-router";
+import { Pressable, StyleSheet, View as RNView } from "react-native";
+import { CalendarDays, ChevronRight, Clock, Flame, Settings, Trophy } from "lucide-react-native";
+import Svg, { Rect } from "react-native-svg";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
-import { fetchSummary, Summary } from "../api/stats";
+import { fetchSummary, fetchTrend, Summary, Trend } from "../api/stats";
+import { fetchAchievements } from "../api/achievements";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
@@ -19,6 +21,7 @@ import {
 } from "../components/ui/accordion";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
+import { Button as BnaButton } from "../components/ui/button";
 import { Icon } from "../components/ui/icon";
 import { ModeToggle } from "../components/ui/mode-toggle";
 import { ScrollView } from "../components/ui/scroll-view";
@@ -46,8 +49,8 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-function initialOf(email: string): string {
-  return email.trim().charAt(0).toUpperCase() || "?";
+function initialOf(nameOrEmail: string): string {
+  return nameOrEmail.trim().charAt(0).toUpperCase() || "?";
 }
 
 function memberSince(createdAt: string): string {
@@ -63,6 +66,13 @@ function nextMilestone(streak: number): string {
     if (streak < target) return `${target - streak} days to your ${target}-day milestone`;
   }
   return "You hit every milestone. Incredible!";
+}
+
+function formatHour(hour: number): string {
+  if (hour < 0) return "—";
+  const period = hour >= 12 ? "PM" : "AM";
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12} ${period}`;
 }
 
 type MonthBlock = {
@@ -86,10 +96,21 @@ function recentMonths(now: Date, count: number): MonthBlock[] {
   return blocks;
 }
 
+function TrendStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.trendStat}>
+      <Text style={styles.trendStatValue}>{value}</Text>
+      <Text style={[styles.trendStatLabel, { color: useColor("textMuted") }]}>{label}</Text>
+    </View>
+  );
+}
+
 export function YouScreen() {
   const { token, user, logout } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [unlockedCount, setUnlockedCount] = useState<number | null>(null);
+  const [trend, setTrend] = useState<Trend | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,6 +120,8 @@ export function YouScreen() {
   const mutedColor = useColor("textMuted");
   const iconColor = useColor("icon");
   const dangerColor = useColor("error");
+  const trackColor = useColor("muted");
+  const borderColor = useColor("border");
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -110,9 +133,20 @@ export function YouScreen() {
       setError("Could not load stats. Is the backend running?");
     }
     try {
-      setSessions(await listSessions(token));
+      setSessions((await listSessions(token)).sessions);
     } catch {
       setSessions([]);
+    }
+    try {
+      const res = await fetchAchievements(token);
+      setUnlockedCount(res.achievements.filter((a) => a.unlocked).length);
+    } catch {
+      setUnlockedCount(null);
+    }
+    try {
+      setTrend(await fetchTrend(token, 30));
+    } catch {
+      setTrend(null);
     } finally {
       setLoading(false);
     }
@@ -155,15 +189,27 @@ export function YouScreen() {
                 style={{ backgroundColor: primaryColor }}
                 textStyle={styles.avatarText}
               >
-                {user ? initialOf(user.email) : "?"}
+                {user ? initialOf(user.name?.trim() || user.email) : "?"}
               </AvatarFallback>
             </Avatar>
             <View style={styles.profileBody}>
-              <Text style={styles.email}>{user?.email ?? "—"}</Text>
+              <Text style={styles.email}>
+                {(user?.name?.trim() || user?.email) ?? "—"}
+              </Text>
               <Text style={[styles.memberSince, { color: mutedColor }]}>
                 {user ? `Member since ${memberSince(user.created_at)}` : ""}
               </Text>
             </View>
+            <BnaButton
+              variant="secondary"
+              size="icon"
+              icon={Settings}
+              label="Open settings"
+              onPress={() => router.push("/settings")}
+              testID="settings-button"
+              haptic={false}
+              textStyle={{ color: iconColor }}
+            />
             <ModeToggle haptic={false} />
             <Button
               title="Log out"
@@ -202,6 +248,28 @@ export function YouScreen() {
           </>
         )}
 
+        {unlockedCount !== null ? (
+          <Pressable
+            onPress={() => router.push("/achievements")}
+            style={({ pressed }) => [
+              styles.achievementCard,
+              { backgroundColor: cardColor, borderColor, opacity: pressed ? 0.85 : 1 },
+            ]}
+            testID="achievements-card"
+          >
+            <View style={[styles.achievementIcon, { backgroundColor: accentColor }]}>
+              <Icon name={Trophy} size={18} strokeWidth={2.2} color={primaryColor} />
+            </View>
+            <View style={styles.achievementBody}>
+              <Text style={styles.achievementTitle}>Achievements</Text>
+              <Text style={[styles.achievementHint, { color: mutedColor }]}>
+                {unlockedCount} of 10 unlocked
+              </Text>
+            </View>
+            <Icon name={ChevronRight} size={16} strokeWidth={2.2} color={mutedColor} />
+          </Pressable>
+        ) : null}
+
         {streakNote ? (
           <View style={styles.streakRow}>
             <Icon name={Flame} size={14} strokeWidth={2.2} color={primaryColor} />
@@ -225,7 +293,7 @@ export function YouScreen() {
 
         <Accordion
           type="multiple"
-          defaultValue={["calendar", "subjects", "weeks"]}
+          defaultValue={["calendar", "subjects", "weeks", "trend"]}
           haptic={false}
         >
           <AccordionItem value="calendar">
@@ -276,7 +344,7 @@ export function YouScreen() {
                   <View key={s.subject_id} style={styles.subjectRow}>
                     <SubjectIcon name={s.icon} size={14} />
                     <Text style={styles.subjectName}>{subjectLabel(s.name)}</Text>
-                    <View style={[styles.subjectBarTrack, { backgroundColor: mutedColor }]}>
+                    <View style={[styles.subjectBarTrack, { backgroundColor: trackColor }]}>
                       <View
                         style={[
                           styles.subjectBarFill,
@@ -302,7 +370,7 @@ export function YouScreen() {
                 <View style={styles.weekRow}>
                   {weeks.map((w) => (
                     <View key={w.weekStart} style={styles.weekDay}>
-                      <View style={[styles.weekBarTrack, { backgroundColor: mutedColor }]}>
+                      <View style={[styles.weekBarTrack, { backgroundColor: trackColor }]}>
                         <View
                           style={[
                             styles.weekBarFill,
@@ -315,6 +383,53 @@ export function YouScreen() {
                       </Text>
                     </View>
                   ))}
+                </View>
+              ) : null}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="trend">
+            <AccordionTrigger>Last 30 days</AccordionTrigger>
+            <AccordionContent>
+              {loading ? (
+                <Skeleton height={140} variant="rounded" />
+              ) : trend ? (
+                <View style={[styles.trendCard, { backgroundColor: cardColor }]} testID="trend-chart">
+                  <Text style={[styles.trendTotal, { color: mutedColor }]}>
+                    {formatDuration(trend.total_minutes)} total
+                  </Text>
+                  <Svg width="100%" height={96} viewBox="0 0 300 84">
+                    {trend.daily.map((d, i) => {
+                      const n = trend.daily.length;
+                      const slot = 300 / n;
+                      const x = i * slot + 1;
+                      const w = Math.max(2, slot - 2);
+                      const max = Math.max(...trend.daily.map((p) => p.minutes), 1);
+                      const h = d.minutes > 0 ? Math.max(3, (d.minutes / max) * 70) : 2;
+                      return (
+                        <Rect
+                          key={d.date}
+                          x={x}
+                          y={80 - h}
+                          width={w}
+                          height={h}
+                          rx={1.5}
+                          fill={d.minutes > 0 ? primaryColor : trackColor}
+                        />
+                      );
+                    })}
+                  </Svg>
+                  <View style={styles.trendInsights}>
+                    <TrendStat
+                      label="Longest session"
+                      value={formatDuration(trend.longest_session_minutes)}
+                    />
+                    <TrendStat
+                      label="Avg per day"
+                      value={formatMinutes(Math.round(trend.avg_per_day_minutes))}
+                    />
+                    <TrendStat label="Busiest hour" value={formatHour(trend.busiest_hour)} />
+                  </View>
                 </View>
               ) : null}
             </AccordionContent>
@@ -338,6 +453,24 @@ const styles = StyleSheet.create({
   email: { fontSize: fontSize.body, fontFamily: appFonts.bold },
   memberSince: { fontSize: fontSize.caption, marginTop: 2 },
   cardRow: { flexDirection: "row", gap: spacing.sm },
+  achievementCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  achievementIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  achievementBody: { flex: 1 },
+  achievementTitle: { fontSize: fontSize.body, fontFamily: appFonts.bold },
+  achievementHint: { fontSize: fontSize.caption, marginTop: 2 },
   streakRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   streakNote: { flex: 1, fontSize: fontSize.caption },
   milestoneBadge: {
@@ -389,5 +522,15 @@ const styles = StyleSheet.create({
   },
   weekBarFill: { width: "100%", borderRadius: radius.sm },
   weekMinutes: { fontSize: fontSize.label, fontVariant: ["tabular-nums"] },
+  trendCard: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  trendTotal: { fontSize: fontSize.caption },
+  trendInsights: { flexDirection: "row", justifyContent: "space-between" },
+  trendStat: { alignItems: "center", gap: spacing.xs },
+  trendStatValue: { fontSize: fontSize.body, fontFamily: appFonts.bold },
+  trendStatLabel: { fontSize: fontSize.label },
   sectionHint: { fontSize: fontSize.caption },
 });

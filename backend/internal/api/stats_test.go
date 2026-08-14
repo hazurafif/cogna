@@ -61,3 +61,40 @@ func TestStatsSummaryRequiresAuth(t *testing.T) {
 		t.Fatalf("status = %d, want 401", resp.StatusCode)
 	}
 }
+
+func TestTrendHandler(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "trendapi@example.com", "password123")
+	subID := catalogSubjectID(t, ts, token, "math")
+
+	body := `{"subject_id":` + strconvFormatInt(subID) +
+		`,"started_at":"2026-07-31T09:00:00","ended_at":"2026-07-31T10:30:00","source":"manual"}`
+	doJSON(t, ts, http.MethodPost, "/api/v1/sessions", token, body)
+
+	resp, out := doJSON(t, ts, http.MethodGet, "/api/v1/stats/trend?days=7", token, "")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if out["days"] != float64(7) {
+		t.Fatalf("days = %v, want 7", out["days"])
+	}
+	daily, ok := out["daily"].([]any)
+	if !ok || len(daily) != 7 {
+		t.Fatalf("daily = %+v", out["daily"])
+	}
+	if out["total_minutes"] == nil || out["longest_session_minutes"] == nil {
+		t.Fatalf("missing insights in %+v", out)
+	}
+}
+
+func TestTrendHandlerRejectsBadDays(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "trendbad@example.com", "password123")
+
+	for _, days := range []string{"abc", "6", "91", "-1"} {
+		resp, _ := doJSON(t, ts, http.MethodGet, "/api/v1/stats/trend?days="+days, token, "")
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("days=%s: status = %d, want 400", days, resp.StatusCode)
+		}
+	}
+}

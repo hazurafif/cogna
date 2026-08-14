@@ -3,6 +3,7 @@ import { api } from "./client";
 export type User = {
   id: number;
   email: string;
+  name: string;
   created_at: string;
 };
 
@@ -27,4 +28,12 @@ export function register(email: string, password: string): Promise<AuthResponse>
 
 export function fetchMe(token: string): Promise<{ user: User }> {
   return api<{ user: User }>("/api/v1/me", { token });
+}
+
+export function updateMe(token: string, name: string): Promise<{ user: User }> {
+  return api<{ user: User }>("/api/v1/me", {
+    method: "PATCH",
+    body: { name },
+    token,
+  });
 }

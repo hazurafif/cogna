@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
+	"strings"
 
 	"cogna/backend/internal/auth"
 	"cogna/backend/internal/store"
@@ -110,6 +111,34 @@ func (h *authHandlers) me(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not load user")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]*store.User{"user": user})
+}
+
+func (h *authHandlers) updateMe(w http.ResponseWriter, r *http.Request) {
+	var p struct {
+		Name *string `json:"name"`
+	}
+	if err := decodeJSON(w, r, &p); err != nil {
+		return
+	}
+	if p.Name == nil {
+		writeError(w, http.StatusBadRequest, "invalid_name", "name is required")
+		return
+	}
+	name := strings.TrimSpace(*p.Name)
+	if name == "" || len(name) > 50 {
+		writeError(w, http.StatusBadRequest, "invalid_name", "name must be 1 to 50 characters")
+		return
+	}
+	user, err := h.st.UpdateUserName(userIDFrom(r), name)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "user no longer exists")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not update user")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]*store.User{"user": user})

@@ -206,3 +206,29 @@ export const withOpacity = (color: string, opacity: number) => {
 
   return color;
 };
+
+/**
+ * Flat aliases onto the BNA stock dark scheme for static `StyleSheet.create`
+ * blocks (feature screens written before the BNA migration). Every value is
+ * still a stock BNA token — no custom palette. Interactive colours should
+ * prefer `useColor` so they follow light/dark switching.
+ */
+export const colors = {
+  bg: darkColors.background,
+  surface: darkColors.secondary,
+  surfaceElevated: darkColors.card,
+  border: darkColors.border,
+  primary: darkColors.primary,
+  primarySoft: darkColors.accent,
+  text: darkColors.text,
+  textSecondary: darkColors.icon,
+  textMuted: darkColors.textMuted,
+  danger: darkColors.error,
+  dangerFill: darkColors.destructive,
+  white: darkColors.foreground,
+  onPrimary: darkColors.primaryForeground,
+  authBg: darkColors.background,
+  authSurface: darkColors.card,
+  authBorder: darkColors.border,
+  authMuted: darkColors.textMuted,
+} as const;

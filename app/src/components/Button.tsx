@@ -5,7 +5,7 @@ import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
 import { spacing } from "../theme/tokens";
 
-export type ButtonVariant = "primary" | "outline" | "danger";
+export type ButtonVariant = "primary" | "outline" | "danger" | "secondary";
 
 type ButtonProps = {
   title: string;
@@ -35,14 +35,21 @@ export function Button({
   const isOutline = variant === "outline";
   const primaryColor = useColor("primary");
   const primaryForegroundColor = useColor("primaryForeground");
-  const spinnerColor = isOutline ? primaryColor : primaryForegroundColor;
+  const secondaryForegroundColor = useColor("secondaryForeground");
+  const spinnerColor = isOutline
+    ? primaryColor
+    : variant === "secondary"
+      ? secondaryForegroundColor
+      : primaryForegroundColor;
 
   const bnaVariant =
     variant === "danger"
       ? "destructive"
-      : isOutline
+      : variant === "outline"
         ? "outline"
-        : "default";
+        : variant === "secondary"
+          ? "secondary"
+          : "default";
 
   return (
     <BnaButton

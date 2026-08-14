@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { Achievement } from "./achievements";
 
 export type StudySession = {
   id: number;
@@ -22,35 +23,57 @@ export type CreateSessionInput = {
   note?: string | null;
 };
 
+export type SessionPage = {
+  sessions: StudySession[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export function listSessions(
   token: string,
-  params: { from?: string; to?: string; subject_id?: number } = {},
-): Promise<StudySession[]> {
+  params: {
+    from?: string;
+    to?: string;
+    subject_id?: number;
+    q?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<SessionPage> {
   const qs = new URLSearchParams();
   if (params.from) qs.set("from", params.from);
   if (params.to) qs.set("to", params.to);
   if (params.subject_id) qs.set("subject_id", String(params.subject_id));
+  if (params.q) qs.set("q", params.q);
+  if (params.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params.offset !== undefined) qs.set("offset", String(params.offset));
   const query = qs.toString() ? `?${qs.toString()}` : "";
-  return api<StudySession[]>(`/api/v1/sessions${query}`, { token });
+  return api<SessionPage>(`/api/v1/sessions${query}`, { token });
 }
 
 export function getSession(token: string, id: number): Promise<StudySession> {
   return api<StudySession>(`/api/v1/sessions/${id}`, { token });
 }
 
+export type SessionMutationResult = {
+  session: StudySession;
+  new_achievements: Achievement[];
+};
+
 export function createSession(
   token: string,
   input: CreateSessionInput,
-): Promise<StudySession> {
-  return api<StudySession>("/api/v1/sessions", { method: "POST", body: input, token });
+): Promise<SessionMutationResult> {
+  return api<SessionMutationResult>("/api/v1/sessions", { method: "POST", body: input, token });
 }
 
 export function updateSession(
   token: string,
   id: number,
   input: CreateSessionInput,
-): Promise<StudySession> {
-  return api<StudySession>(`/api/v1/sessions/${id}`, {
+): Promise<SessionMutationResult> {
+  return api<SessionMutationResult>(`/api/v1/sessions/${id}`, {
     method: "PUT",
     body: input,
     token,

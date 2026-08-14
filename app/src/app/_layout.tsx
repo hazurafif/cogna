@@ -30,6 +30,8 @@ function RootNavigator() {
           <Stack.Screen name="session/[id]" />
           <Stack.Screen name="session/new" />
           <Stack.Screen name="session/[id]/edit" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="achievements" />
         </Stack.Protected>
         <Stack.Protected guard={!token}>
           <Stack.Screen name="(auth)" />

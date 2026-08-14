@@ -34,7 +34,7 @@ describe("NewSessionScreen", () => {
   });
 
   it("creates a manual session with date and minutes", async () => {
-    mockCreateSession.mockResolvedValue({ id: 5 });
+    mockCreateSession.mockResolvedValue({ session: { id: 5 }, new_achievements: [] });
 
     const { getByPlaceholderText, getByText } = await render(<NewSessionScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
@@ -57,7 +57,7 @@ describe("NewSessionScreen", () => {
   });
 
   it("sets minutes from a quick-duration preset", async () => {
-    mockCreateSession.mockResolvedValue({ id: 5 });
+    mockCreateSession.mockResolvedValue({ session: { id: 5 }, new_achievements: [] });
 
     const { getByDisplayValue, getByPlaceholderText, getByText } = await render(<NewSessionScreen />);
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
@@ -111,7 +111,7 @@ describe("NewSessionScreen", () => {
       started_at: "2026-07-30T09:00:00", ended_at: "2026-07-30T09:45:00",
       duration_minutes: 45, source: "manual", note: "revision", created_at: "",
     });
-    mockUpdateSession.mockResolvedValue({ id: 5 });
+    mockUpdateSession.mockResolvedValue({ session: { id: 5 }, new_achievements: [] });
 
     const { getByDisplayValue, getByText } = await render(<NewSessionScreen />);
     await waitFor(() => expect(getByDisplayValue("2026-07-30")).toBeTruthy());

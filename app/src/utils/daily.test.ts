@@ -188,6 +188,20 @@ describe("goalDaysThisWeek", () => {
         session("2026-07-28T14:00:00", 61),
         session("2026-07-29T09:00:00", 30),
       ],
+      DAILY_GOAL_MINUTES,
+      NOW,
+    );
+    expect(days).toBe(2);
+  });
+
+  it("honors a custom goal", () => {
+    const days = goalDaysThisWeek(
+      [
+        session("2026-07-27T09:00:00", 100),
+        session("2026-07-28T09:00:00", 59),
+        session("2026-07-28T14:00:00", 1),
+      ],
+      60,
       NOW,
     );
     expect(days).toBe(2);

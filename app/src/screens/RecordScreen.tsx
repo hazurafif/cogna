@@ -5,10 +5,12 @@ import { router } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession } from "../api/sessions";
+import { Achievement } from "../api/achievements";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
+import { UnlockOverlay } from "../components/UnlockOverlay";
 import { subjectLabel } from "../constants/subjectIcons";
 import { ProgressRingChart } from "../components/charts/progress-ring-chart";
 import { Icon } from "../components/ui/icon";
@@ -42,9 +44,12 @@ export function RecordScreen() {
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const [baseElapsed, setBaseElapsed] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unlocked, setUnlocked] = useState<Achievement[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,13 +69,13 @@ export function RecordScreen() {
   useEffect(() => {
     if (startedAt === null) return;
     intervalRef.current = setInterval(
-      () => setElapsed(Date.now() - startedAt),
+      () => setElapsed(baseElapsed + (Date.now() - startedAt)),
       1000,
     );
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [startedAt]);
+  }, [startedAt, baseElapsed]);
 
   useEffect(() => {
     return () => {
@@ -81,41 +86,72 @@ export function RecordScreen() {
   const start = () => {
     if (subjectId === null) return;
     setElapsed(0);
+    setBaseElapsed(0);
+    setPausedAt(null);
     setStartedAt(Date.now());
     hapticLight();
   };
 
+  const pause = () => {
+    if (startedAt === null) return;
+    const total = baseElapsed + (Date.now() - startedAt);
+    setElapsed(total);
+    setBaseElapsed(total);
+    setStartedAt(null);
+    setPausedAt(Date.now());
+    hapticLight();
+  };
+
+  const resume = () => {
+    if (startedAt !== null || pausedAt === null) return;
+    setStartedAt(Date.now());
+    setPausedAt(null);
+    hapticLight();
+  };
+
   const stop = async () => {
-    if (startedAt === null || subjectId === null || !token) return;
+    if (subjectId === null || !token) return;
+    if (startedAt === null && pausedAt === null) return;
     if (intervalRef.current) clearInterval(intervalRef.current);
+    const ended = Date.now();
+    const totalMs = baseElapsed + (startedAt !== null ? ended - startedAt : 0);
     setSaving(true);
     setError(null);
     try {
-      await createSession(token, {
+      const res = await createSession(token, {
         subject_id: subjectId,
-        started_at: localISO(new Date(startedAt)),
-        ended_at: localISO(new Date()),
+        started_at: localISO(new Date(ended - totalMs)),
+        ended_at: localISO(new Date(ended)),
         source: "timer",
       });
       setStartedAt(null);
+      setPausedAt(null);
+      setBaseElapsed(0);
+      setElapsed(0);
       setSaving(false);
-      hapticSuccess();
       toastSuccess("Session saved!", "Your streak keeps burning.");
-      navigationTimerRef.current = setTimeout(() => {
-        router.navigate("/");
-      }, 1400);
+      if (res.new_achievements.length > 0) {
+        setUnlocked(res.new_achievements);
+      } else {
+        hapticSuccess();
+        navigationTimerRef.current = setTimeout(() => {
+          router.navigate("/");
+        }, 1400);
+      }
     } catch {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(
-        () => setElapsed(Date.now() - startedAt),
-        1000,
-      );
+      if (startedAt !== null) {
+        intervalRef.current = setInterval(
+          () => setElapsed(baseElapsed + (Date.now() - startedAt)),
+          1000,
+        );
+      }
       toastError("Could not save session. Try again.");
       setSaving(false);
     }
   };
 
-  const running = startedAt !== null;
+  const running = startedAt !== null || pausedAt !== null;
+  const paused = pausedAt !== null;
   const ringProgress =
     running ? ((elapsed % (60 * 60 * 1000)) / (60 * 60 * 1000)) * 100 : 0;
 
@@ -169,7 +205,9 @@ export function RecordScreen() {
               </Text>
               <Text style={[styles.runningLabel, { color: iconColor }]}>
                 {running
-                  ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · timer running`
+                  ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · ${
+                      paused ? "paused" : "timer running"
+                    }`
                   : "Pick a subject to begin"}
               </Text>
             </View>
@@ -177,13 +215,31 @@ export function RecordScreen() {
         </Card>
 
         <View style={styles.actions}>
-          <Button
-            title={startedAt === null ? "Start studying" : "Running…"}
-            onPress={start}
-            disabled={subjectId === null || startedAt !== null}
-            testID="start-button"
-          />
-          {startedAt !== null ? (
+          {!running ? (
+            <Button
+              title="Start studying"
+              onPress={start}
+              disabled={subjectId === null}
+              testID="start-button"
+            />
+          ) : null}
+          {running ? (
+            paused ? (
+              <Button
+                title="Resume"
+                onPress={resume}
+                testID="resume-button"
+              />
+            ) : (
+              <Button
+                title="Pause"
+                variant="outline"
+                onPress={pause}
+                testID="pause-button"
+              />
+            )
+          ) : null}
+          {running ? (
             <Button
               title="Stop and save"
               variant="danger"
@@ -200,6 +256,10 @@ export function RecordScreen() {
           />
         </View>
       </ScrollView>
+
+      {unlocked.length > 0 ? (
+        <UnlockOverlay achievements={unlocked} onDone={() => router.navigate("/")} />
+      ) : null}
     </Screen>
   );
 }

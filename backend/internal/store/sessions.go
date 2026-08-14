@@ -125,31 +125,64 @@ func (s *Store) SessionByID(userID, id int64) (*Session, error) {
 	return sess, nil
 }
 
-// ListSessions returns the user's sessions ordered by started_at descending,
-// optionally filtered by a date range on started_at and by subject.
-func (s *Store) ListSessions(userID int64, from, to string, subjectID int64) ([]Session, error) {
-	query := `SELECT ` + sessionColumns + ` FROM sessions s
-		JOIN subject_catalog sub ON sub.id = s.subject_id
-		WHERE s.user_id = ?`
-	args := []any{userID}
+// SessionFilter narrows ListSessions results. Limit 0 means no limit.
+type SessionFilter struct {
+	UserID    int64
+	From      string // inclusive date on started_at (YYYY-MM-DD)
+	To        string // inclusive date on started_at (YYYY-MM-DD)
+	SubjectID int64
+	Q         string // matches note text or subject name (case-insensitive)
+	Limit     int
+	Offset    int
+}
 
-	if from != "" {
+func (f SessionFilter) whereClause() (string, []any) {
+	query := ` WHERE s.user_id = ?`
+	args := []any{f.UserID}
+	if f.From != "" {
 		query += ` AND date(s.started_at) >= ?`
-		args = append(args, from)
+		args = append(args, f.From)
 	}
-	if to != "" {
+	if f.To != "" {
 		query += ` AND date(s.started_at) <= ?`
-		args = append(args, to)
+		args = append(args, f.To)
 	}
-	if subjectID > 0 {
+	if f.SubjectID > 0 {
 		query += ` AND s.subject_id = ?`
-		args = append(args, subjectID)
+		args = append(args, f.SubjectID)
 	}
-	query += ` ORDER BY s.started_at DESC`
+	if f.Q != "" {
+		query += ` AND (s.note LIKE ? OR sub.name LIKE ?)`
+		pattern := "%" + f.Q + "%"
+		args = append(args, pattern, pattern)
+	}
+	return query, args
+}
+
+// ListSessions returns the user's sessions ordered by started_at descending,
+// matching the filter, along with the total number of matching sessions
+// (before limit/offset).
+func (s *Store) ListSessions(userID int64, f SessionFilter) ([]Session, int, error) {
+	f.UserID = userID
+	where, args := f.whereClause()
+
+	var total int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sessions s`+
+		` JOIN subject_catalog sub ON sub.id = s.subject_id`+where, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count sessions: %w", err)
+	}
+
+	query := `SELECT ` + sessionColumns + ` FROM sessions s` +
+		` JOIN subject_catalog sub ON sub.id = s.subject_id` + where +
+		` ORDER BY s.started_at DESC, s.id DESC`
+	if f.Limit > 0 {
+		query += ` LIMIT ? OFFSET ?`
+		args = append(args, f.Limit, f.Offset)
+	}
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("list sessions: %w", err)
+		return nil, 0, fmt.Errorf("list sessions: %w", err)
 	}
 	defer rows.Close()
 
@@ -157,11 +190,11 @@ func (s *Store) ListSessions(userID int64, from, to string, subjectID int64) ([]
 	for rows.Next() {
 		sess, err := s.scanSession(rows)
 		if err != nil {
-			return nil, fmt.Errorf("scan session: %w", err)
+			return nil, 0, fmt.Errorf("scan session: %w", err)
 		}
 		sessions = append(sessions, *sess)
 	}
-	return sessions, rows.Err()
+	return sessions, total, rows.Err()
 }
 
 // UpdateSession updates the user's session, or returns ErrNotFound, or

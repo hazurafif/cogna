@@ -29,12 +29,17 @@ func createSession(t *testing.T, ts *httptest.Server, token string, subjectID in
 		t.Fatalf("status = %d, want 201", resp.StatusCode)
 	}
 	var out struct {
-		ID int64 `json:"id"`
+		Session struct {
+			ID int64 `json:"id"`
+		} `json:"session"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	return out.ID
+	if out.Session.ID == 0 {
+		t.Fatal("create returned no session id")
+	}
+	return out.Session.ID
 }
 
 func TestSessionLifecycle(t *testing.T) {
@@ -207,15 +212,21 @@ func TestListSessionsHandler(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200", resp.StatusCode)
 		}
-		var out []struct {
-			ID          int64  `json:"id"`
-			SubjectID   int64  `json:"subject_id"`
-			SubjectName string `json:"subject_name"`
+		var out struct {
+			Sessions []struct {
+				ID          int64  `json:"id"`
+				SubjectID   int64  `json:"subject_id"`
+				SubjectName string `json:"subject_name"`
+			} `json:"sessions"`
+			Total int `json:"total"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		return out
+		if out.Total != len(out.Sessions) {
+			t.Fatalf("total = %d, want %d", out.Total, len(out.Sessions))
+		}
+		return out.Sessions
 	}
 
 	all := list("")

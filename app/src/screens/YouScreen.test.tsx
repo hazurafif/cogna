@@ -1,9 +1,11 @@
 import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { router } from "expo-router";
 import { YouScreen } from "./YouScreen";
 import { useAuth } from "../auth/AuthContext";
-import { fetchSummary } from "../api/stats";
+import { fetchSummary, fetchTrend } from "../api/stats";
 import { listSessions } from "../api/sessions";
+import { fetchAchievements } from "../api/achievements";
 import { Colors, withOpacity } from "../theme/colors";
 
 jest.mock("../auth/AuthContext", () => ({ useAuth: jest.fn() }));
@@ -16,17 +18,24 @@ jest.mock("../hooks/useModeToggle", () => ({
     toggleMode: jest.fn(),
   }),
 }));
-jest.mock("../api/stats", () => ({ fetchSummary: jest.fn() }));
+jest.mock("../api/stats", () => ({ fetchSummary: jest.fn(), fetchTrend: jest.fn() }));
 jest.mock("../api/sessions", () => ({ listSessions: jest.fn() }));
+jest.mock("../api/achievements", () => ({ fetchAchievements: jest.fn() }));
 jest.mock("expo-router", () => {
   const React = require("react");
-  return { useFocusEffect: (cb: () => void) => React.useEffect(cb, [cb]) };
+  return {
+    useFocusEffect: (cb: () => void) => React.useEffect(cb, [cb]),
+    router: { push: jest.fn() },
+  };
 });
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockFetchSummary = fetchSummary as jest.Mock;
+const mockFetchTrend = fetchTrend as jest.Mock;
 const mockListSessions = listSessions as jest.Mock;
+const mockFetchAchievements = fetchAchievements as jest.Mock;
 const mockLogout = jest.fn();
+const mockRouterPush = router.push as jest.Mock;
 
 const now = new Date();
 const p = (n: number) => String(n).padStart(2, "0");
@@ -44,6 +53,10 @@ function session(id: number, subjectName: string, minutes: number, startedAt: st
   };
 }
 
+function page(sessions: ReturnType<typeof session>[], total?: number) {
+  return { sessions, total: total ?? sessions.length, limit: 50, offset: 0 };
+}
+
 const summary = {
   total_minutes: 150,
   week_minutes: 60,
@@ -59,10 +72,22 @@ describe("YouScreen", () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({
       token: "tok",
-      user: { id: 1, email: "rafif@example.com", created_at: "2026-07-01T10:00:00" },
+      user: { id: 1, email: "rafif@example.com", name: "", created_at: "2026-07-01T10:00:00" },
       logout: mockLogout,
     });
-    mockListSessions.mockResolvedValue([]);
+    mockListSessions.mockResolvedValue({ sessions: [], total: 0, limit: 50, offset: 0 });
+    mockFetchAchievements.mockResolvedValue({
+      achievements: [{ code: "first_session", unlocked: true }],
+    });
+    mockFetchTrend.mockResolvedValue({
+      days: 30,
+      daily: [],
+      per_subject: [],
+      total_minutes: 1500,
+      longest_session_minutes: 120,
+      avg_per_day_minutes: 50,
+      busiest_hour: 21,
+    });
   });
 
   it("shows the profile card with member-since date", async () => {
@@ -77,13 +102,13 @@ describe("YouScreen", () => {
 
   it("shows totals and the best streak from sessions", async () => {
     mockFetchSummary.mockResolvedValue(summary);
-    mockListSessions.mockResolvedValue([
+    mockListSessions.mockResolvedValue(page([
       session(1, "math", 60, iso(0, 9)),
       session(2, "math", 60, iso(1, 9)),
       session(3, "math", 60, iso(2, 9)),
       session(4, "math", 60, iso(3, 9)),
       session(5, "math", 60, iso(4, 9)),
-    ]);
+    ]));
 
     const { getByText } = await render(<YouScreen />);
 
@@ -95,10 +120,10 @@ describe("YouScreen", () => {
 
   it("renders the heatmap calendar with intensity-colored cells", async () => {
     mockFetchSummary.mockResolvedValue(summary);
-    mockListSessions.mockResolvedValue([
+    mockListSessions.mockResolvedValue(page([
       session(1, "math", 150, iso(0, 9)), // intensity 4 (>= 120m)
       session(2, "math", 20, iso(3, 9)), // intensity 1 (< 30m)
-    ]);
+    ]));
 
     const { getByTestId, getByText } = await render(<YouScreen />);
 
@@ -127,7 +152,7 @@ describe("YouScreen", () => {
 
   it("shows the weekly chart", async () => {
     mockFetchSummary.mockResolvedValue(summary);
-    mockListSessions.mockResolvedValue([session(1, "math", 60, iso(0, 9))]);
+    mockListSessions.mockResolvedValue(page([session(1, "math", 60, iso(0, 9))]));
 
     const { getByText } = await render(<YouScreen />);
 
@@ -137,7 +162,7 @@ describe("YouScreen", () => {
 
   it("shows streak milestones and the next one", async () => {
     mockFetchSummary.mockResolvedValue({ ...summary, streak_days: 7 });
-    mockListSessions.mockResolvedValue([session(1, "math", 60, iso(0, 9))]);
+    mockListSessions.mockResolvedValue(page([session(1, "math", 60, iso(0, 9))]));
 
     const { getByText } = await render(<YouScreen />);
 
@@ -160,5 +185,67 @@ describe("YouScreen", () => {
 
     const { getByText } = await render(<YouScreen />);
     await waitFor(() => expect(getByText(/could not load stats/i)).toBeTruthy());
+  });
+
+  it("opens settings from the profile card", async () => {
+    mockFetchSummary.mockResolvedValue(summary);
+
+    const { getByTestId } = await render(<YouScreen />);
+    await waitFor(() => expect(getByTestId("settings-button")).toBeTruthy());
+    await fireEvent.press(getByTestId("settings-button"));
+    expect(mockRouterPush).toHaveBeenCalledWith("/settings");
+  });
+
+  it("shows the achievements card and opens the badges screen", async () => {
+    mockFetchSummary.mockResolvedValue(summary);
+    mockFetchAchievements.mockResolvedValue({
+      achievements: [
+        { code: "first_session", unlocked: true },
+        { code: "streak_3", unlocked: true },
+        { code: "streak_7", unlocked: false },
+      ],
+    });
+
+    const { getByTestId, getByText } = await render(<YouScreen />);
+    await waitFor(() => expect(getByTestId("achievements-card")).toBeTruthy());
+    expect(getByText("2 of 10 unlocked")).toBeTruthy();
+
+    await fireEvent.press(getByTestId("achievements-card"));
+    expect(mockRouterPush).toHaveBeenCalledWith("/achievements");
+  });
+
+  it("shows the 30-day trend chart with insights", async () => {
+    mockFetchSummary.mockResolvedValue(summary);
+    mockFetchTrend.mockResolvedValue({
+      days: 30,
+      daily: [{ date: "2026-07-02", minutes: 90 }],
+      per_subject: [],
+      total_minutes: 1500,
+      longest_session_minutes: 120,
+      avg_per_day_minutes: 50,
+      busiest_hour: 21,
+    });
+
+    const { getByTestId, getByText } = await render(<YouScreen />);
+
+    await waitFor(() => expect(getByTestId("trend-chart")).toBeTruthy());
+    expect(getByText("Last 30 days")).toBeTruthy();
+    expect(getByText("25h 0m total")).toBeTruthy();
+    expect(getByText("2h 30m")).toBeTruthy();
+    expect(getByText("50m")).toBeTruthy();
+    expect(getByText("9 PM")).toBeTruthy();
+  });
+
+  it("shows the display name when set", async () => {
+    mockUseAuth.mockReturnValue({
+      token: "tok",
+      user: { id: 1, email: "rafif@example.com", name: "Rafif", created_at: "2026-07-01T10:00:00" },
+      logout: mockLogout,
+    });
+    mockFetchSummary.mockResolvedValue(summary);
+
+    const { getByText } = await render(<YouScreen />);
+    await waitFor(() => expect(getByText("Rafif")).toBeTruthy());
+    expect(getByText("R")).toBeTruthy();
   });
 });

@@ -316,3 +316,49 @@ func TestMeReturnsUser(t *testing.T) {
 		t.Fatalf("email = %q, want me@example.com", out.User.Email)
 	}
 }
+
+func TestUpdateMeSetsName(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "name@example.com", "password123")
+
+	resp, out := doJSON(t, ts, http.MethodPatch, "/api/v1/me", token, `{"name":"  Rina  "}`)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	user, ok := out["user"].(map[string]any)
+	if !ok {
+		t.Fatalf("out = %+v", out)
+	}
+	if user["name"] != "Rina" {
+		t.Fatalf("name = %v, want trimmed Rina", user["name"])
+	}
+	if user["email"] != "name@example.com" {
+		t.Fatalf("email = %v", user["email"])
+	}
+}
+
+func TestUpdateMeRejectsInvalidNames(t *testing.T) {
+	ts := newTestServer(t)
+	token := registerUser(t, ts, "badname@example.com", "password123")
+
+	for _, body := range []string{
+		`{}`,
+		`{"name":""}`,
+		`{"name":"   "}`,
+		`{"name":"` + strings.Repeat("x", 51) + `"}`,
+	} {
+		resp, _ := doJSON(t, ts, http.MethodPatch, "/api/v1/me", token, body)
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("body %s: status = %d, want 400", body, resp.StatusCode)
+		}
+	}
+}
+
+func TestUpdateMeRequiresToken(t *testing.T) {
+	ts := newTestServer(t)
+
+	resp, _ := doJSON(t, ts, http.MethodPatch, "/api/v1/me", "", `{"name":"Rina"}`)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", resp.StatusCode)
+	}
+}

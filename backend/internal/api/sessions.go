@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"cogna/backend/internal/store"
 )
@@ -51,21 +52,48 @@ func (h *sessionHandlers) validate(w http.ResponseWriter, p *sessionPayload) boo
 
 func (h *sessionHandlers) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	var subjectID int64
+	f := store.SessionFilter{
+		From: q.Get("from"),
+		To:   q.Get("to"),
+		Q:    q.Get("q"),
+	}
 	if v := q.Get("subject_id"); v != "" {
 		parsed, err := parseInt64(v)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_subject_id", "subject_id must be a positive integer")
 			return
 		}
-		subjectID = parsed
+		f.SubjectID = parsed
 	}
-	sessions, err := h.st.ListSessions(userIDFrom(r), q.Get("from"), q.Get("to"), subjectID)
+	if v := q.Get("limit"); v != "" {
+		limit, err := strconv.Atoi(v)
+		if err != nil || limit < 1 || limit > 200 {
+			writeError(w, http.StatusBadRequest, "invalid_limit", "limit must be between 1 and 200")
+			return
+		}
+		f.Limit = limit
+	} else {
+		f.Limit = 50
+	}
+	if v := q.Get("offset"); v != "" {
+		offset, err := strconv.Atoi(v)
+		if err != nil || offset < 0 {
+			writeError(w, http.StatusBadRequest, "invalid_offset", "offset must be a non-negative integer")
+			return
+		}
+		f.Offset = offset
+	}
+	sessions, total, err := h.st.ListSessions(userIDFrom(r), f)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", "could not list sessions")
 		return
 	}
-	writeJSON(w, http.StatusOK, sessions)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"sessions": sessions,
+		"total":     total,
+		"limit":     f.Limit,
+		"offset":    f.Offset,
+	})
 }
 
 func (h *sessionHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +131,15 @@ func (h *sessionHandlers) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "could not create session")
 		return
 	}
-	writeJSON(w, http.StatusCreated, sess)
+	newly, err := h.st.EvaluateAchievements(userIDFrom(r))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not evaluate achievements")
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"session":          sess,
+		"new_achievements": newly,
+	})
 }
 
 func (h *sessionHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +167,15 @@ func (h *sessionHandlers) update(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	writeJSON(w, http.StatusOK, sess)
+	newly, err := h.st.EvaluateAchievements(userIDFrom(r))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "could not evaluate achievements")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"session":          sess,
+		"new_achievements": newly,
+	})
 }
 
 func (h *sessionHandlers) delete(w http.ResponseWriter, r *http.Request) {

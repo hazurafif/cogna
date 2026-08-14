@@ -47,7 +47,7 @@ func TestCreateSessionAcceptsAnyCatalogSubject(t *testing.T) {
 	if _, err := s.CreateSession(userID, otherID, "2026-07-31T09:00:00", "2026-07-31T10:00:00", "manual", nil); err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	got, err := s.ListSessions(userID, "", "", 0)
+	got, _, err := s.ListSessions(userID, SessionFilter{})
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestListSessionsFilters(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	all, err := s.ListSessions(userID, "", "", 0)
+	all, _, err := s.ListSessions(userID, SessionFilter{})
 	if err != nil {
 		t.Fatalf("list all: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestListSessionsFilters(t *testing.T) {
 		t.Fatal("expected newest first")
 	}
 
-	day, err := s.ListSessions(userID, "2026-07-31", "2026-07-31", 0)
+	day, _, err := s.ListSessions(userID, SessionFilter{From: "2026-07-31", To: "2026-07-31"})
 	if err != nil {
 		t.Fatalf("list day: %v", err)
 	}
@@ -88,12 +88,83 @@ func TestListSessionsFilters(t *testing.T) {
 		t.Fatalf("got %+v", day)
 	}
 
-	only, err := s.ListSessions(userID, "", "", subA)
+	only, _, err := s.ListSessions(userID, SessionFilter{SubjectID: subA})
 	if err != nil {
 		t.Fatalf("list by subject: %v", err)
 	}
 	if len(only) != 1 || only[0].SubjectID != subA {
 		t.Fatalf("got %+v", only)
+	}
+}
+
+func TestListSessionsSearchAndPagination(t *testing.T) {
+	s := newTestStore(t)
+	userID := mustUser(t, s, "page@example.com")
+	mathID := mustCatalogSubject(t, s, "math")
+	histID := mustCatalogSubject(t, s, "history")
+
+	note := func(s string) *string { return &s }
+	for i, started := range []string{
+		"2026-07-27T09:00:00",
+		"2026-07-28T09:00:00",
+		"2026-07-29T09:00:00",
+		"2026-07-30T09:00:00",
+	} {
+		var subject int64
+		var n *string
+		if i%2 == 0 {
+			subject = mathID
+			n = note("algebra review")
+		} else {
+			subject = histID
+			n = note("world war one notes")
+		}
+		if _, err := s.CreateSession(userID, subject, started, started[:11]+"10:00:00", "timer", n); err != nil {
+			t.Fatalf("create %d: %v", i, err)
+		}
+	}
+
+	all, total, err := s.ListSessions(userID, SessionFilter{})
+	if err != nil {
+		t.Fatalf("list all: %v", err)
+	}
+	if len(all) != 4 || total != 4 {
+		t.Fatalf("got %d sessions total %d, want 4/4", len(all), total)
+	}
+
+	page, total, err := s.ListSessions(userID, SessionFilter{Limit: 2, Offset: 1})
+	if err != nil {
+		t.Fatalf("list page: %v", err)
+	}
+	if len(page) != 2 || total != 4 {
+		t.Fatalf("got %d sessions total %d, want 2/4", len(page), total)
+	}
+	if page[0].StartedAt != "2026-07-29T09:00:00" || page[1].StartedAt != "2026-07-28T09:00:00" {
+		t.Fatalf("page order = %+v", page)
+	}
+
+	byNote, total, err := s.ListSessions(userID, SessionFilter{Q: "algebra"})
+	if err != nil {
+		t.Fatalf("search note: %v", err)
+	}
+	if len(byNote) != 2 || total != 2 {
+		t.Fatalf("note search got %d total %d, want 2/2", len(byNote), total)
+	}
+
+	bySubject, _, err := s.ListSessions(userID, SessionFilter{Q: "history"})
+	if err != nil {
+		t.Fatalf("search subject: %v", err)
+	}
+	if len(bySubject) != 2 {
+		t.Fatalf("subject search got %d, want 2", len(bySubject))
+	}
+
+	noMatch, total, err := s.ListSessions(userID, SessionFilter{Q: "zzz"})
+	if err != nil {
+		t.Fatalf("search miss: %v", err)
+	}
+	if len(noMatch) != 0 || total != 0 {
+		t.Fatalf("miss got %d total %d, want 0/0", len(noMatch), total)
 	}
 }
 

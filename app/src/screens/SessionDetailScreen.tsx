@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet } from "react-native";
+import { Share, StyleSheet } from "react-native";
 import { Clock, CalendarDays } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../auth/AuthContext";
@@ -8,6 +8,7 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
+import { subjectLabel } from "../constants/subjectIcons";
 import { Badge } from "../components/ui/badge";
 import { Icon } from "../components/ui/icon";
 import { ScrollView } from "../components/ui/scroll-view";
@@ -65,6 +66,16 @@ export function SessionDetailScreen() {
     }
   };
 
+  const onShare = () => {
+    if (!session) return;
+    const subject = subjectLabel(session.subject_name);
+    const note = session.note ? ` — ${session.note}` : "";
+    const message = `I just studied ${formatDuration(session.duration_minutes)} of ${subject} on Cogna${note}! 🔥`;
+    Share.share({ message }).catch(() => {
+      // share sheet dismissed or unavailable; nothing to recover
+    });
+  };
+
   if (loading) {
     return (
       <Screen>
@@ -120,6 +131,12 @@ export function SessionDetailScreen() {
         ) : null}
         <Separator style={styles.separator} />
         <View style={styles.actions}>
+          <Button
+            title="Share"
+            variant="secondary"
+            onPress={onShare}
+            testID="share-button"
+          />
           <Button
             title="Edit"
             variant="outline"

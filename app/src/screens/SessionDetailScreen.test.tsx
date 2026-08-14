@@ -112,3 +112,40 @@ describe("SessionDetailScreen", () => {
     await waitFor(() => expect(require("expo-router").router.back).toHaveBeenCalled());
   });
 });
+
+describe("SessionDetailScreen share", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ token: "tok" });
+    mockGetSession.mockResolvedValue({
+      id: 2,
+      user_id: 1,
+      subject_id: 1,
+      subject_name: "math",
+      subject_icon: "calculator",
+      started_at: "2026-07-31T09:00:00",
+      ended_at: "2026-07-31T10:30:00",
+      duration_minutes: 90,
+      source: "timer",
+      note: "algebra",
+      created_at: "",
+    });
+  });
+
+  it("shares the session summary via the system sheet", async () => {
+    const { Share } = require("react-native");
+    const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({} as never);
+
+    const { getByTestId } = await render(<SessionDetailScreen />);
+    await waitFor(() => expect(getByTestId("share-button")).toBeTruthy());
+
+    await fireEvent.press(getByTestId("share-button"));
+    expect(shareSpy).toHaveBeenCalledWith({
+      message: expect.stringContaining("1h 30m of Math"),
+    });
+    expect(shareSpy).toHaveBeenCalledWith({
+      message: expect.stringContaining("algebra"),
+    });
+    shareSpy.mockRestore();
+  });
+});

@@ -13,8 +13,20 @@ import (
 type User struct {
 	ID           int64  `json:"id"`
 	Email        string `json:"email"`
+	Name         string `json:"name"`
 	PasswordHash string `json:"-"`
 	CreatedAt    string `json:"created_at"`
+}
+
+const userColumns = `id, email, name, password_hash, created_at`
+
+func (s *Store) scanUser(row interface{ Scan(...any) error }) (*User, error) {
+	user := &User{}
+	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.PasswordHash, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 // CreateUser inserts a new user and returns it with its assigned ID.
@@ -25,8 +37,8 @@ func (s *Store) CreateUser(email, passwordHash string) (*User, error) {
 		CreatedAt:    time.Now().Format(timeFormat),
 	}
 	res, err := s.db.Exec(
-		`INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)`,
-		user.Email, user.PasswordHash, user.CreatedAt,
+		`INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)`,
+		user.Email, user.Name, user.PasswordHash, user.CreatedAt,
 	)
 	if err != nil {
 		var sqliteErr *sqlite.Error
@@ -41,10 +53,8 @@ func (s *Store) CreateUser(email, passwordHash string) (*User, error) {
 
 // UserByEmail returns the user with the given email, or ErrNotFound.
 func (s *Store) UserByEmail(email string) (*User, error) {
-	user := &User{}
-	err := s.db.QueryRow(
-		`SELECT id, email, password_hash, created_at FROM users WHERE email = ?`, email,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	user, err := s.scanUser(s.db.QueryRow(
+		`SELECT `+userColumns+` FROM users WHERE email = ?`, email))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -56,10 +66,8 @@ func (s *Store) UserByEmail(email string) (*User, error) {
 
 // UserByID returns the user with the given ID, or ErrNotFound.
 func (s *Store) UserByID(id int64) (*User, error) {
-	user := &User{}
-	err := s.db.QueryRow(
-		`SELECT id, email, password_hash, created_at FROM users WHERE id = ?`, id,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	user, err := s.scanUser(s.db.QueryRow(
+		`SELECT `+userColumns+` FROM users WHERE id = ?`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -67,4 +75,17 @@ func (s *Store) UserByID(id int64) (*User, error) {
 		return nil, fmt.Errorf("query user by id: %w", err)
 	}
 	return user, nil
+}
+
+// UpdateUserName sets the user's display name and returns the updated user,
+// or ErrNotFound.
+func (s *Store) UpdateUserName(userID int64, name string) (*User, error) {
+	res, err := s.db.Exec(`UPDATE users SET name = ? WHERE id = ?`, name, userID)
+	if err != nil {
+		return nil, fmt.Errorf("update user name: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, ErrNotFound
+	}
+	return s.UserByID(userID)
 }

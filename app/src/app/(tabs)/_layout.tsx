@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { House, CircleDot, CircleUser } from "lucide-react-native";
+import { House, CircleDot, Users, CircleUser } from "lucide-react-native";
 import { Icon } from "../../components/ui/icon";
 
 export default function TabsLayout() {
@@ -21,6 +21,15 @@ export default function TabsLayout() {
           title: "Record",
           tabBarIcon: ({ color, size }) => (
             <Icon name={CircleDot} size={size} strokeWidth={2.2} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: "Feed",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name={Users} size={size} strokeWidth={2.2} color={color} />
           ),
         }}
       />

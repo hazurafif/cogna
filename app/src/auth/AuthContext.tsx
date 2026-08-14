@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { fetchMe, login as apiLogin, register as apiRegister, User } from "../api/auth";
+import { fetchMe, login as apiLogin, register as apiRegister, updateMe, User } from "../api/auth";
 import { onUnauthorized } from "../api/client";
 import { clearToken, loadToken, saveToken } from "./token";
 
@@ -9,6 +9,7 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  updateName: (name: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -59,6 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await saveToken(res.token);
         setToken(res.token);
         setUser(res.user);
+      },
+      updateName: async (name) => {
+        if (!token) throw new Error("not authenticated");
+        const { user: updated } = await updateMe(token, name);
+        setUser(updated);
       },
       logout: async () => {
         await clearToken();

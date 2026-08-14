@@ -142,7 +142,18 @@ func TestSubjectCatalogMigrationMapsLegacySubjects(t *testing.T) {
 		t.Fatalf("migrate pre: %v", err)
 	}
 
-	userID := mustUser(t, st, "mig@example.com")
+	// Seed a legacy user (pre-0004 schema has no name column) with raw SQL.
+	userRes, err := db.Exec(
+		`INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)`,
+		"mig@example.com", "hash", "2026-07-01T00:00:00",
+	)
+	if err != nil {
+		t.Fatalf("seed user: %v", err)
+	}
+	userID, err := userRes.LastInsertId()
+	if err != nil {
+		t.Fatalf("user id: %v", err)
+	}
 	if _, err := db.Exec(
 		`INSERT INTO subjects (user_id, name, icon, created_at) VALUES
 		 (?, 'Math', 'book-open', '2026-07-01T00:00:00'),
@@ -168,7 +179,7 @@ func TestSubjectCatalogMigrationMapsLegacySubjects(t *testing.T) {
 	mathID := mustCatalogSubject(t, st, "math")
 	otherID := mustCatalogSubject(t, st, "other")
 
-	sess, err := st.ListSessions(userID, "", "", 0)
+	sess, _, err := st.ListSessions(userID, SessionFilter{})
 	if err != nil {
 		t.Fatalf("list sessions: %v", err)
 	}
