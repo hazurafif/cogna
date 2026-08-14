@@ -1,15 +1,24 @@
 import React, { useCallback, useState } from "react";
-import { SectionList, StyleSheet, View } from "react-native";
+import { Pressable, SectionList, StyleSheet } from "react-native";
 import { RefreshCw, ChevronRight, History, Target } from "lucide-react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Avatar, IconButton, List, ProgressBar, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSessions, StudySession } from "../api/sessions";
 import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
 import { subjectLabel } from "../constants/subjectIcons";
-import { colors } from "../theme/colors";
+import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { HelloWave } from "../components/ui/hello-wave";
+import { Icon } from "../components/ui/icon";
+import { ModeToggle } from "../components/ui/mode-toggle";
+import { Progress } from "../components/ui/progress";
+import { Skeleton } from "../components/ui/skeleton";
+import { Text } from "../components/ui/text";
+import { View } from "../components/ui/view";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration, formatMinutes } from "../utils/time";
@@ -37,15 +46,26 @@ function formatTime(startedAt: string): string {
 export function HomeScreen() {
   const { token, user } = useAuth();
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const primaryColor = useColor("primary");
+  const cardColor = useColor("card");
+  const borderColor = useColor("border");
+  const mutedColor = useColor("textMuted");
+  const iconColor = useColor("icon");
+  const dangerColor = useColor("error");
 
   const refresh = useCallback(async () => {
     if (!token) return;
+    setLoading(true);
     try {
       setSessions(await listSessions(token));
       setError(null);
     } catch {
       setError("Could not load sessions. Is the backend running?");
+    } finally {
+      setLoading(false);
     }
   }, [token]);
 
@@ -61,36 +81,39 @@ export function HomeScreen() {
   const today = todayMinutes(sessions);
   const goalPct = Math.min(100, Math.round((today / DAILY_GOAL_MINUTES) * 100));
 
-  const header = (
+  const header = loading ? (
+    <View style={styles.content}>
+      <Skeleton height={110} variant="rounded" />
+      <Skeleton height={110} variant="rounded" />
+    </View>
+  ) : (
     <View style={styles.content}>
       <Card>
         <View style={styles.weekHeader}>
           <View>
-            <Text style={styles.weekLabel}>THIS WEEK</Text>
+            <Text style={[styles.weekLabel, { color: mutedColor }]}>THIS WEEK</Text>
             <Text style={styles.weekValue}>{formatDuration(week)}</Text>
           </View>
-          <View style={styles.goalDaysBadge}>
-            <Target size={14} strokeWidth={2.2} color={colors.primary} />
-            <Text style={styles.goalDaysText}>Goal met {goalDays}/7 days</Text>
-          </View>
+          <Badge
+            variant="secondary"
+            textStyle={{ ...styles.goalDaysText, color: primaryColor }}
+          >
+            Goal met {goalDays}/7 days
+          </Badge>
         </View>
       </Card>
 
       <Card>
         <View style={styles.goalHeader}>
           <View style={styles.goalTitleWrap}>
-            <Target size={16} strokeWidth={2.2} color={colors.primary} />
+            <Icon name={Target} size={16} strokeWidth={2.2} color={primaryColor} />
             <Text style={styles.goalTitle}>Today{"'"}s goal</Text>
           </View>
           <Text style={styles.goalValue}>
-            {formatMinutes(today)} <Text style={styles.goalOf}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
+            {formatMinutes(today)} <Text style={[styles.goalOf, { color: mutedColor }]}>/ {formatDuration(DAILY_GOAL_MINUTES)}</Text>
           </Text>
         </View>
-        <ProgressBar
-          progress={goalPct / 100}
-          color={colors.primary}
-          style={styles.goalTrack}
-        />
+        <Progress value={goalPct} height={8} style={styles.goalTrack} />
       </Card>
     </View>
   );
@@ -99,28 +122,38 @@ export function HomeScreen() {
     <Screen>
       <View style={styles.topRow}>
         <View style={styles.profile}>
-          <Avatar.Text
-            size={42}
-            label={user ? initialOf(user.email) : "?"}
-            labelStyle={styles.avatarText}
-            style={styles.avatar}
-          />
+          <Avatar size={42}>
+            <AvatarFallback
+              style={{ backgroundColor: primaryColor }}
+              textStyle={styles.avatarText}
+            >
+              {user ? initialOf(user.email) : "?"}
+            </AvatarFallback>
+          </Avatar>
           <View>
-            <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
-            <Text style={styles.greetingSub}>Ready to get back at it?</Text>
+            <View style={styles.greetingRow}>
+              <Text style={styles.greeting}>Hi, {user?.email ?? "there"}</Text>
+              <HelloWave size="sm" />
+            </View>
+            <Text style={[styles.greetingSub, { color: mutedColor }]}>Ready to get back at it?</Text>
           </View>
         </View>
-        <IconButton
-          icon={({ size, color }) => (
-            <RefreshCw size={size} strokeWidth={2.2} color={color} />
-          )}
-          onPress={refresh}
-          testID="refresh-button"
-          iconColor={colors.textSecondary}
-          style={styles.refreshBtn}
-        />
+        <View style={styles.topActions}>
+          <ModeToggle haptic={false} />
+          <Button
+            variant="secondary"
+            size="icon"
+            icon={RefreshCw}
+            label="Refresh sessions"
+            onPress={refresh}
+            testID="refresh-button"
+            haptic={false}
+            style={[styles.refreshBtn, { borderColor }]}
+            textStyle={{ color: iconColor }}
+          />
+        </View>
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
       <SectionList
         sections={sections}
         keyExtractor={(s) => String(s.id)}
@@ -128,41 +161,45 @@ export function HomeScreen() {
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={header}
         renderSectionHeader={({ section }) => (
-          <Text style={styles.dayLabel}>{section.label}</Text>
+          <Text style={[styles.dayLabel, { color: iconColor }]}>{section.label}</Text>
         )}
         renderItem={({ item }) => (
-          <List.Item
-            title={subjectLabel(item.subject_name)}
-            titleStyle={styles.rowName}
-            description={`${formatTime(item.started_at)} · ${item.source}`}
-            descriptionStyle={styles.rowMeta}
-            left={() => (
-              <View style={styles.iconChip}>
-                <SubjectIcon name={item.subject_icon} size={16} />
-              </View>
-            )}
-            right={() => (
-              <View style={styles.rowRight}>
-                <Text style={styles.rowDuration}>
-                  {formatDuration(item.duration_minutes)}
-                </Text>
-                <ChevronRight size={16} strokeWidth={2.2} color={colors.textMuted} />
-              </View>
-            )}
+          <Pressable
             onPress={() => router.push(`/session/${item.id}`)}
-            style={styles.row}
-          />
+            style={({ pressed }) => [
+              styles.row,
+              { backgroundColor: cardColor, borderColor, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <View style={[styles.iconChip, { backgroundColor: mutedColor }]}>
+              <SubjectIcon name={item.subject_icon} size={16} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.rowName}>{subjectLabel(item.subject_name)}</Text>
+              <Text style={[styles.rowMeta, { color: iconColor }]}>
+                {formatTime(item.started_at)} · {item.source}
+              </Text>
+            </View>
+            <View style={styles.rowRight}>
+              <Text style={styles.rowDuration}>
+                {formatDuration(item.duration_minutes)}
+              </Text>
+              <Icon name={ChevronRight} size={16} strokeWidth={2.2} color={mutedColor} />
+            </View>
+          </Pressable>
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={styles.emptyIcon}>
-              <History size={26} strokeWidth={2} color={colors.textMuted} />
+          loading ? null : (
+            <View style={styles.empty}>
+              <View style={[styles.emptyIcon, { backgroundColor: cardColor }]}>
+                <Icon name={History} size={26} strokeWidth={2} color={mutedColor} />
+              </View>
+              <Text style={styles.emptyTitle}>No sessions yet</Text>
+              <Text style={[styles.emptyBody, { color: mutedColor }]}>
+                Head to the Record tab to start your first study session.
+              </Text>
             </View>
-            <Text style={styles.emptyTitle}>No sessions yet</Text>
-            <Text style={styles.emptyBody}>
-              Head to the Record tab to start your first study session.
-            </Text>
-          </View>
+          )
         }
       />
     </Screen>
@@ -178,16 +215,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   profile: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  avatar: { backgroundColor: colors.primary },
   avatarText: { fontSize: fontSize.title, fontFamily: appFonts.extraBold },
-  greeting: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
-  greetingSub: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 1 },
+  greetingRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  greeting: { fontSize: fontSize.title, fontFamily: appFonts.bold },
+  greetingSub: { fontSize: fontSize.caption, marginTop: 1 },
+  topActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   refreshBtn: {
-    width: 36,
-    height: 36,
-    backgroundColor: colors.surfaceElevated,
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   weekHeader: {
     flexDirection: "row",
@@ -197,47 +234,29 @@ const styles = StyleSheet.create({
   weekLabel: {
     fontSize: fontSize.caption,
     fontFamily: appFonts.extraBold,
-    color: colors.textMuted,
     letterSpacing: 1,
   },
   weekValue: {
     fontSize: fontSize.heading,
     fontFamily: appFonts.extraBold,
-    color: colors.text,
     letterSpacing: -0.5,
     marginTop: 2,
     fontVariant: ["tabular-nums"],
   },
-  goalDaysBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  goalDaysText: { color: colors.primary, fontSize: fontSize.caption, fontFamily: appFonts.bold },
+  goalDaysText: { fontSize: fontSize.caption, fontFamily: appFonts.bold },
   goalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   goalTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  goalTitle: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.text },
+  goalTitle: { fontSize: fontSize.body, fontFamily: appFonts.bold },
   goalValue: {
     fontSize: fontSize.title,
     fontFamily: appFonts.extraBold,
-    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
-  goalOf: { fontSize: fontSize.caption, fontFamily: appFonts.semibold, color: colors.textMuted },
-  goalTrack: {
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    marginTop: spacing.md,
-  },
+  goalOf: { fontSize: fontSize.caption, fontFamily: appFonts.semibold },
+  goalTrack: { marginTop: spacing.md },
   dayLabel: {
     fontSize: fontSize.caption,
     fontFamily: appFonts.extraBold,
-    color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginTop: spacing.md,
@@ -247,40 +266,40 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   row: {
-    backgroundColor: colors.surfaceElevated,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
+    padding: spacing.md,
     marginBottom: spacing.sm,
   },
+  rowBody: { flex: 1 },
   rowRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
   },
-  rowName: { fontSize: fontSize.body, fontFamily: appFonts.bold, color: colors.text },
-  rowMeta: { fontSize: fontSize.caption, marginTop: 2, color: colors.textSecondary },
+  rowName: { fontSize: fontSize.body, fontFamily: appFonts.bold },
+  rowMeta: { fontSize: fontSize.caption, marginTop: 2 },
   rowDuration: {
     fontSize: fontSize.body,
     fontFamily: appFonts.extraBold,
-    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
-  error: { color: colors.danger, fontSize: fontSize.body },
+  error: { fontSize: fontSize.body },
   empty: { alignItems: "center", gap: spacing.sm, marginTop: spacing.xl * 2 },
   emptyIcon: {
     width: 56,
     height: 56,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyTitle: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
-  emptyBody: { fontSize: fontSize.body, color: colors.textMuted, textAlign: "center" },
+  emptyTitle: { fontSize: fontSize.title, fontFamily: appFonts.bold },
+  emptyBody: { fontSize: fontSize.body, textAlign: "center" },
 });

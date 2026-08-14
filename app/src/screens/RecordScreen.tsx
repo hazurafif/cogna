@@ -1,26 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, StyleSheet, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
-import { CircleStop, CirclePlay, Flame } from "lucide-react-native";
+import { StyleSheet } from "react-native";
+import { CircleStop, CirclePlay } from "lucide-react-native";
 import { router } from "expo-router";
-import { Surface, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession } from "../api/sessions";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { subjectLabel } from "../constants/subjectIcons";
-import { colors } from "../theme/colors";
+import { ProgressRingChart } from "../components/charts/progress-ring-chart";
+import { Icon } from "../components/ui/icon";
+import { ScrollView } from "../components/ui/scroll-view";
+import { Skeleton } from "../components/ui/skeleton";
+import { Text } from "../components/ui/text";
+import { View } from "../components/ui/view";
+import { useToast } from "../components/ui/toast";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
-import { fontSize, radius, spacing } from "../theme/tokens";
+import { fontSize, spacing } from "../theme/tokens";
 import { localISO } from "../utils/time";
 import { hapticLight, hapticSuccess } from "../utils/haptics";
 
 const RING_SIZE = 240;
 const RING_STROKE = 10;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -33,22 +37,28 @@ function formatElapsed(ms: number): string {
 
 export function RecordScreen() {
   const { token } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [celebrating, setCelebrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pulse] = useState(() => new Animated.Value(0));
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const ringColor = useColor("primary");
+  const dangerColor = useColor("error");
+  const iconColor = useColor("icon");
+  const textColor = useColor("text");
 
   useEffect(() => {
     if (!token) return;
     listSubjects(token)
       .then(setSubjects)
-      .catch(() => setError("Could not load subjects."));
+      .catch(() => setError("Could not load subjects."))
+      .finally(() => setLoadingSubjects(false));
   }, [token]);
 
   useEffect(() => {
@@ -63,26 +73,10 @@ export function RecordScreen() {
   }, [startedAt]);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: false }),
-        Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: false }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulse]);
-
-  useEffect(() => {
-    if (!celebrating) return;
-    celebrationTimerRef.current = setTimeout(() => {
-      setCelebrating(false);
-      router.navigate("/");
-    }, 1400);
     return () => {
-      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+      if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
     };
-  }, [celebrating]);
+  }, []);
 
   const start = () => {
     if (subjectId === null) return;
@@ -106,98 +100,81 @@ export function RecordScreen() {
       setStartedAt(null);
       setSaving(false);
       hapticSuccess();
-      setCelebrating(true);
+      toastSuccess("Session saved!", "Your streak keeps burning.");
+      navigationTimerRef.current = setTimeout(() => {
+        router.navigate("/");
+      }, 1400);
     } catch {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(
         () => setElapsed(Date.now() - startedAt),
         1000,
       );
-      setError("Could not save session. Try again.");
+      toastError("Could not save session. Try again.");
       setSaving(false);
     }
   };
 
   const running = startedAt !== null;
-  const ringColor = colors.primary;
   const ringProgress =
-    running ? (elapsed % (60 * 60 * 1000)) / (60 * 60 * 1000) : 0;
-  const ringDash = RING_CIRCUMFERENCE * (1 - ringProgress);
-  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-  const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
-  const celebrationScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.15] });
+    running ? ((elapsed % (60 * 60 * 1000)) / (60 * 60 * 1000)) * 100 : 0;
 
   return (
     <Screen title="Record">
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.subjectRow}>
-          {subjects.map((s) => (
-            <Chip
-              key={s.id}
-              label={subjectLabel(s.name)}
-              selected={subjectId === s.id}
-              onPress={() => setSubjectId(s.id)}
-            />
-          ))}
-        </View>
+        {loadingSubjects ? (
+          <View style={styles.subjectRow}>
+            <Skeleton width={90} height={40} variant="rounded" />
+            <Skeleton width={90} height={40} variant="rounded" />
+            <Skeleton width={90} height={40} variant="rounded" />
+          </View>
+        ) : (
+          <View style={styles.subjectRow}>
+            {subjects.map((s) => (
+              <Chip
+                key={s.id}
+                label={subjectLabel(s.name)}
+                selected={subjectId === s.id}
+                onPress={() => setSubjectId(s.id)}
+              />
+            ))}
+          </View>
+        )}
 
-        <Surface style={styles.ringSurface}>
+        <Card>
           <View style={styles.ringWrap}>
-            {running ? (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.pulseGlow,
-                  {
-                    backgroundColor: ringColor,
-                    transform: [{ scale: pulseScale }],
-                    opacity: pulseOpacity,
-                  },
-                ]}
-              />
-            ) : null}
-            <Svg width={RING_SIZE} height={RING_SIZE}>
-              <Circle
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={RING_RADIUS}
-                stroke={colors.surfaceElevated}
-                strokeWidth={RING_STROKE}
-                fill="none"
-              />
-              {running ? (
-                <Circle
-                  cx={RING_SIZE / 2}
-                  cy={RING_SIZE / 2}
-                  r={RING_RADIUS}
-                  stroke={ringColor}
-                  strokeWidth={RING_STROKE}
-                  strokeLinecap="round"
-                  strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-                  strokeDashoffset={ringDash}
-                  fill="none"
-                  transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
-                />
-              ) : null}
-            </Svg>
+            <ProgressRingChart
+              progress={ringProgress}
+              size={RING_SIZE}
+              strokeWidth={RING_STROKE}
+              config={{ animated: false }}
+              showLabel={false}
+            />
             <View style={styles.ringInner}>
-              {running ? (
-                <CircleStop size={40} strokeWidth={1.8} color={ringColor} />
-              ) : (
-                <CirclePlay size={40} strokeWidth={1.8} color={ringColor} />
-              )}
-              <Text style={[styles.elapsed, !running && styles.elapsedIdle]} testID="elapsed">
+              <Icon
+                name={running ? CircleStop : CirclePlay}
+                size={40}
+                strokeWidth={1.8}
+                color={ringColor}
+              />
+              <Text
+                style={[
+                  styles.elapsed,
+                  { color: running ? textColor : iconColor },
+                ]}
+                testID="elapsed"
+              >
                 {running ? formatElapsed(elapsed) : "00:00:00"}
               </Text>
-              <Text style={styles.runningLabel}>
+              <Text style={[styles.runningLabel, { color: iconColor }]}>
                 {running
                   ? `${subjectLabel(subjects.find((s) => s.id === subjectId)?.name ?? "")} · timer running`
                   : "Pick a subject to begin"}
               </Text>
             </View>
           </View>
-        </Surface>
+        </Card>
 
         <View style={styles.actions}>
           <Button
@@ -223,18 +200,6 @@ export function RecordScreen() {
           />
         </View>
       </ScrollView>
-
-      {celebrating ? (
-        <View style={styles.celebrationOverlay} pointerEvents="none">
-          <Animated.View
-            style={[styles.celebrationIcon, { transform: [{ scale: celebrationScale }] }]}
-          >
-            <Flame size={56} strokeWidth={2} color={colors.primary} />
-          </Animated.View>
-          <Text style={styles.celebrationTitle}>Session saved!</Text>
-          <Text style={styles.celebrationSub}>Your streak keeps burning.</Text>
-        </View>
-      ) : null}
     </Screen>
   );
 }
@@ -247,24 +212,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "center",
   },
-  ringSurface: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   ringWrap: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  pulseGlow: {
-    position: "absolute",
-    width: RING_SIZE - 12,
-    height: RING_SIZE - 12,
-    borderRadius: (RING_SIZE - 12) / 2,
   },
   ringInner: {
     position: "absolute",
@@ -275,32 +225,9 @@ const styles = StyleSheet.create({
     fontSize: 38,
     fontFamily: appFonts.extraBold,
     letterSpacing: -1,
-    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
-  elapsedIdle: { color: colors.textSecondary },
-  runningLabel: { color: colors.textSecondary, fontSize: fontSize.caption },
+  runningLabel: { fontSize: fontSize.caption },
   actions: { gap: spacing.md, marginTop: spacing.sm, width: "100%" },
-  error: { color: colors.danger, fontSize: fontSize.body },
-  celebrationOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(11, 14, 20, 0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-  },
-  celebrationIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  celebrationTitle: { fontSize: fontSize.heading, fontFamily: appFonts.extraBold, color: colors.text },
-  celebrationSub: { fontSize: fontSize.body, color: colors.textSecondary },
+  error: { fontSize: fontSize.body },
 });

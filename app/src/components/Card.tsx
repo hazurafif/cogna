@@ -1,32 +1,34 @@
 import React from "react";
-import { StyleSheet } from "react-native";
-import { Card as PaperCard } from "react-native-paper";
-import { colors } from "../theme/colors";
+import { StyleProp, StyleSheet, ViewStyle } from "react-native";
+import { Card as BnaCard } from "./ui/card";
+import { useColor } from "../hooks/useColor";
 import { radius, spacing } from "../theme/tokens";
 
 type CardProps = {
   children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
- * Cogna's Card — a Material Design 3 contained card (React Native Paper).
+ * Cogna's Card — the BNA UI card with a hairline border and the app's spacing.
+ * Colours come straight from the BNA theme (`card` surface, `border` hairline).
  */
-export function Card({ children }: CardProps) {
+export function Card({ children, style }: CardProps) {
+  const borderColor = useColor("border");
+
   return (
-    <PaperCard mode="contained" style={styles.card}>
-      <PaperCard.Content style={styles.content}>{children}</PaperCard.Content>
-    </PaperCard>
+    <BnaCard
+      style={StyleSheet.flatten([
+        {
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor,
+          padding: spacing.lg,
+        },
+        style,
+      ]) as ViewStyle}
+    >
+      {children}
+    </BnaCard>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-  },
-  content: {
-    padding: spacing.lg,
-  },
-});

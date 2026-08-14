@@ -2,7 +2,7 @@ import React from "react";
 import { render } from "@testing-library/react-native";
 import { Clock, Flame } from "lucide-react-native";
 import { StatCard } from "./StatCard";
-import { colors } from "../theme/colors";
+import { Colors } from "../theme/colors";
 
 describe("StatCard", () => {
   it("renders value and label", async () => {
@@ -20,7 +20,7 @@ describe("StatCard", () => {
     const card = getByTestId("stat-card");
     expect(card.props.style).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ backgroundColor: colors.primary }),
+        expect.objectContaining({ backgroundColor: Colors.light.primary }),
       ]),
     );
   });

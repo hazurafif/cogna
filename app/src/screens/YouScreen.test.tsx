@@ -4,8 +4,18 @@ import { YouScreen } from "./YouScreen";
 import { useAuth } from "../auth/AuthContext";
 import { fetchSummary } from "../api/stats";
 import { listSessions } from "../api/sessions";
+import { Colors, withOpacity } from "../theme/colors";
 
 jest.mock("../auth/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../hooks/useModeToggle", () => ({
+  useModeToggle: () => ({
+    isDark: true,
+    mode: "dark",
+    setMode: jest.fn(),
+    currentMode: "dark",
+    toggleMode: jest.fn(),
+  }),
+}));
 jest.mock("../api/stats", () => ({ fetchSummary: jest.fn() }));
 jest.mock("../api/sessions", () => ({ listSessions: jest.fn() }));
 jest.mock("expo-router", () => {
@@ -96,9 +106,11 @@ describe("YouScreen", () => {
     await waitFor(() => expect(getByTestId(`heat-cell-${dayKey(0)}`)).toBeTruthy());
 
     const cellColor = (key: string) => getByTestId(`heat-cell-${key}`).props.style[1].backgroundColor;
-    expect(cellColor(dayKey(0))).toBe("#FC4C02");
-    expect(cellColor(dayKey(3))).toBe("rgba(252, 76, 2, 0.2)");
-    expect(cellColor(dayKey(2))).toBe("#1B2230"); // no activity -> blank
+    // Jest runs in the light BNA scheme; the buckets derive from the theme's
+    // own primary colour at increasing opacity.
+    expect(cellColor(dayKey(0))).toBe(Colors.light.primary);
+    expect(cellColor(dayKey(3))).toBe(withOpacity(Colors.light.primary, 0.2));
+    expect(cellColor(dayKey(2))).toBe(Colors.light.card); // no activity -> blank
   });
 
   it("shows the subject breakdown with labels and totals", async () => {

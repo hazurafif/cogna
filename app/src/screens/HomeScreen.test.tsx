@@ -6,6 +6,15 @@ import { useAuth } from "../auth/AuthContext";
 import { listSessions } from "../api/sessions";
 
 jest.mock("../auth/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../hooks/useModeToggle", () => ({
+  useModeToggle: () => ({
+    isDark: true,
+    mode: "dark",
+    setMode: jest.fn(),
+    currentMode: "dark",
+    toggleMode: jest.fn(),
+  }),
+}));
 jest.mock("../api/sessions", () => ({ listSessions: jest.fn() }));
 jest.mock("expo-router", () => {
   const React = require("react");

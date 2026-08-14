@@ -9,10 +9,10 @@ import {
   Roboto_700Bold,
   Roboto_800ExtraBold,
 } from "@expo-google-fonts/roboto";
-import { PaperProvider } from "react-native-paper";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
-import { colors } from "../theme/colors";
-import { paperTheme } from "../theme/paper";
+import { ThemeProvider } from "../providers/theme-provider";
+import { ToastProvider } from "../components/ui/toast";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 function RootNavigator() {
   const { token, loading } = useAuth();
@@ -23,13 +23,8 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-        }}
-      >
+      <StatusBar style="auto" />
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!!token}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="session/[id]" />
@@ -53,16 +48,20 @@ export default function RootLayout() {
     Roboto_800ExtraBold,
   });
 
-  // Wait for the Material typography before rendering the UI.
+  // Wait for the brand typography before rendering the UI.
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <PaperProvider theme={paperTheme}>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </PaperProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -21,13 +21,3 @@ export const fontSize = {
   heading: 24,
   hero: 44,
 } as const;
-
-export const shadow = {
-  card: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-} as const;

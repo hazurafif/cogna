@@ -1,9 +1,9 @@
 import React from "react";
-import { ActivityIndicator, StyleSheet } from "react-native";
-import { Button as PaperButton } from "react-native-paper";
-import { colors } from "../theme/colors";
+import { ActivityIndicator } from "react-native";
+import { Button as BnaButton } from "./ui/button";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
-import { radius, spacing } from "../theme/tokens";
+import { spacing } from "../theme/tokens";
 
 export type ButtonVariant = "primary" | "outline" | "danger";
 
@@ -17,10 +17,11 @@ type ButtonProps = {
 };
 
 /**
- * Cogna's Button — a Material Design 3 button (React Native Paper).
+ * Cogna's Button — a thin wrapper over the BNA UI button.
  *
- * The loading spinner is rendered through Paper's icon slot so it keeps a
- * stable `button-loading` testID.
+ * Maps Cogna's three brand variants onto BNA's `default` / `outline` /
+ * `destructive` and renders the loading spinner itself so it keeps a stable
+ * `button-loading` testID while the BNA button stays disabled underneath.
  */
 export function Button({
   title,
@@ -31,51 +32,50 @@ export function Button({
   testID,
 }: ButtonProps) {
   const blocked = disabled || loading;
-  const isDanger = variant === "danger";
   const isOutline = variant === "outline";
-  const spinnerColor = isOutline ? colors.primary : colors.white;
+  const primaryColor = useColor("primary");
+  const primaryForegroundColor = useColor("primaryForeground");
+  const spinnerColor = isOutline ? primaryColor : primaryForegroundColor;
+
+  const bnaVariant =
+    variant === "danger"
+      ? "destructive"
+      : isOutline
+        ? "outline"
+        : "default";
 
   return (
-    <PaperButton
-      mode={isOutline ? "outlined" : "contained"}
+    <BnaButton
+      variant={bnaVariant}
       onPress={onPress}
       disabled={blocked}
       loading={false}
+      animation={false}
+      haptic={false}
       testID={testID ?? "button"}
       style={styles.button}
-      contentStyle={styles.content}
-      labelStyle={styles.label}
-      buttonColor={isDanger ? colors.dangerFill : undefined}
-      textColor={isDanger ? colors.white : undefined}
-      icon={
-        loading
-          ? () => (
-              <ActivityIndicator
-                testID="button-loading"
-                size={18}
-                color={spinnerColor}
-              />
-            )
-          : undefined
-      }
+      textStyle={styles.label}
     >
-      {title}
-    </PaperButton>
+      {loading ? (
+        <ActivityIndicator
+          testID="button-loading"
+          size={18}
+          color={spinnerColor}
+        />
+      ) : (
+        title
+      )}
+    </BnaButton>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   button: {
-    borderRadius: radius.full,
-    minHeight: 50,
     alignSelf: "stretch",
-  },
-  content: {
-    minHeight: 50,
     paddingHorizontal: spacing.xl,
   },
   label: {
     fontFamily: appFonts.bold,
     letterSpacing: 0.2,
   },
-});
+} as const;

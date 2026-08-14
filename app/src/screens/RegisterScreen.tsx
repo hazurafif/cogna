@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { Link, router } from "expo-router";
+import { StyleSheet } from "react-native";
+import { router } from "expo-router";
 import { Lock, UserRound, ArrowRight } from "lucide-react-native";
-import { TextInput, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
-import { colors } from "../theme/colors";
+import { Text } from "../components/ui/text";
+import { View } from "../components/ui/view";
+import { Icon } from "../components/ui/icon";
+import { Input } from "../components/ui/input";
+import { Link } from "../components/ui/link";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
 import { fontSize, spacing } from "../theme/tokens";
 
@@ -16,6 +20,9 @@ export function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const mutedColor = useColor("textMuted");
+  const dangerColor = useColor("error");
 
   const onSubmit = async () => {
     setError(null);
@@ -33,42 +40,34 @@ export function RegisterScreen() {
   return (
     <Screen>
       <View style={styles.center}>
-        <Text style={styles.title}>Create account</Text>
+        <Text variant="title" style={styles.title}>Create account</Text>
         <Text style={styles.subtitle}>Start your study streak today.</Text>
-        <TextInput
-          mode="outlined"
+        <Input
+          variant="outline"
+          icon={UserRound}
           placeholder="Email"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={mutedColor}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
           testID="email-input"
-          left={
-            <TextInput.Icon
-              icon={({ size, color }) => <UserRound size={size} strokeWidth={2.2} color={color} />}
-            />
-          }
         />
-        <TextInput
-          mode="outlined"
+        <Input
+          variant="outline"
+          icon={Lock}
           placeholder="Password (min 8 characters)"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={mutedColor}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           testID="password-input"
-          left={
-            <TextInput.Icon
-              icon={({ size, color }) => <Lock size={size} strokeWidth={2.2} color={color} />}
-            />
-          }
         />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
         <Button title="Register" onPress={onSubmit} loading={submitting} />
         <Link href="/login" style={styles.link}>
           <Text style={styles.linkText}>Already have an account? Log in</Text>
-          <ArrowRight size={14} strokeWidth={2.2} color={colors.textSecondary} />
+          <Icon name={ArrowRight} size={14} strokeWidth={2.2} color={mutedColor} />
         </Link>
       </View>
     </Screen>
@@ -81,16 +80,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: appFonts.extraBold,
     letterSpacing: -0.5,
-    color: colors.text,
     textAlign: "center",
   },
   subtitle: {
     fontSize: fontSize.body,
-    color: colors.textMuted,
     textAlign: "center",
     marginBottom: spacing.xl,
   },
-  error: { color: colors.danger, fontSize: fontSize.body },
+  error: { fontSize: fontSize.body },
   link: {
     flexDirection: "row",
     alignItems: "center",
@@ -98,5 +95,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.sm,
   },
-  linkText: { color: colors.textSecondary, fontSize: fontSize.body, fontFamily: appFonts.semibold },
+  linkText: { fontSize: fontSize.body, fontFamily: appFonts.semibold },
 });

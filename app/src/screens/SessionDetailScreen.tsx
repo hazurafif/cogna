@@ -1,15 +1,21 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { Clock, CalendarDays } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { deleteSession, getSession, StudySession } from "../api/sessions";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { SubjectIcon } from "../components/SubjectIcon";
-import { colors } from "../theme/colors";
+import { Badge } from "../components/ui/badge";
+import { Icon } from "../components/ui/icon";
+import { ScrollView } from "../components/ui/scroll-view";
+import { Separator } from "../components/ui/separator";
+import { Skeleton } from "../components/ui/skeleton";
+import { Text } from "../components/ui/text";
+import { View } from "../components/ui/view";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
 import { fontSize, radius, spacing } from "../theme/tokens";
 import { formatDuration } from "../utils/time";
@@ -18,16 +24,26 @@ export function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const accentColor = useColor("accent");
+  const cardColor = useColor("card");
+  const borderColor = useColor("border");
+  const iconColor = useColor("icon");
+  const dangerColor = useColor("error");
+
   const refresh = useCallback(async () => {
     if (!token || !id) return;
+    setLoading(true);
     try {
       setSession(await getSession(token, Number(id)));
       setError(null);
     } catch {
       setError("Could not load session.");
+    } finally {
+      setLoading(false);
     }
   }, [token, id]);
 
@@ -49,40 +65,60 @@ export function SessionDetailScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <Screen>
+        <Skeleton height={180} variant="rounded" />
+        <Skeleton height={60} variant="rounded" />
+        <Skeleton height={120} variant="rounded" />
+      </Screen>
+    );
+  }
+
   if (!session) {
     return (
       <Screen>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
       </Screen>
     );
   }
 
   return (
     <Screen>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
         <Card>
           <View style={styles.hero}>
-            <View style={styles.heroGlow} />
+            <View style={[styles.heroGlow, { backgroundColor: accentColor }]} />
             <View style={styles.subjectRow}>
               <SubjectIcon name={session.subject_icon} size={16} />
               <Text style={styles.subjectName}>{session.subject_name}</Text>
+              <Badge
+                variant="secondary"
+                textStyle={{ ...styles.sourceBadge, color: iconColor }}
+              >
+                {session.source}
+              </Badge>
             </View>
             <Text style={styles.duration}>{formatDuration(session.duration_minutes)}</Text>
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <CalendarDays size={13} strokeWidth={2.2} color={colors.textSecondary} />
-                <Text style={styles.meta}>{session.started_at}</Text>
+                <Icon name={CalendarDays} size={13} strokeWidth={2.2} color={iconColor} />
+                <Text style={[styles.meta, { color: iconColor }]}>{session.started_at}</Text>
               </View>
               <View style={styles.metaItem}>
-                <Clock size={13} strokeWidth={2.2} color={colors.textSecondary} />
-                <Text style={styles.meta}>{session.duration_minutes} minutes</Text>
+                <Icon name={Clock} size={13} strokeWidth={2.2} color={iconColor} />
+                <Text style={[styles.meta, { color: iconColor }]}>{session.duration_minutes} minutes</Text>
               </View>
-              <Text style={styles.meta}>{session.source}</Text>
             </View>
           </View>
         </Card>
-        {session.note ? <Text style={styles.note}>{session.note}</Text> : null}
+        {session.note ? (
+          <Text style={[styles.note, { backgroundColor: cardColor, borderColor }]}>
+            {session.note}
+          </Text>
+        ) : null}
+        <Separator style={styles.separator} />
         <View style={styles.actions}>
           <Button
             title="Edit"
@@ -116,30 +152,31 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: colors.primarySoft,
   },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  subjectName: { fontSize: fontSize.title, fontFamily: appFonts.bold, color: colors.text },
+  subjectName: { fontSize: fontSize.title, fontFamily: appFonts.bold },
+  sourceBadge: {
+    fontSize: fontSize.caption,
+    fontFamily: appFonts.bold,
+    textTransform: "capitalize",
+  },
   duration: {
     fontSize: 40,
     fontFamily: appFonts.extraBold,
     letterSpacing: -1.5,
-    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
   metaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.md, marginTop: 4 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  meta: { fontSize: fontSize.caption, color: colors.textSecondary },
+  meta: { fontSize: fontSize.caption },
   note: {
     fontSize: fontSize.body,
-    color: colors.text,
-    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.lg,
     marginTop: spacing.sm,
   },
-  actions: { gap: spacing.md, marginTop: spacing.xl },
-  error: { color: colors.danger, fontSize: fontSize.body },
+  separator: { marginTop: spacing.lg },
+  actions: { gap: spacing.md, marginTop: spacing.md },
+  error: { fontSize: fontSize.body },
 });

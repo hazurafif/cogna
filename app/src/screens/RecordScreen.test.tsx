@@ -2,6 +2,7 @@ import React from "react";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { RecordScreen } from "./RecordScreen";
+import { ToastProvider } from "../components/ui/toast";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects } from "../api/subjects";
 import { createSession } from "../api/sessions";
@@ -18,6 +19,9 @@ jest.mock("expo-router", () => ({
 }));
 
 const mockUseAuth = useAuth as jest.Mock;
+
+const renderScreen = () =>
+  render(<ToastProvider><RecordScreen /></ToastProvider>);
 const mockListSubjects = listSubjects as jest.Mock;
 const mockCreateSession = createSession as jest.Mock;
 
@@ -37,7 +41,7 @@ describe("RecordScreen", () => {
   });
 
   it("shows catalog subjects with display labels", async () => {
-    const { getByText } = await render(<RecordScreen />);
+    const { getByText } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
     expect(getByText("Other")).toBeTruthy();
   });
@@ -45,7 +49,7 @@ describe("RecordScreen", () => {
   it("starts, ticks, and stops a session", async () => {
     mockCreateSession.mockResolvedValue({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<RecordScreen />);
+    const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -70,13 +74,13 @@ describe("RecordScreen", () => {
   });
 
   it("does not start without a subject", async () => {
-    const { getByTestId } = await render(<RecordScreen />);
+    const { getByTestId } = await renderScreen();
     await fireEvent.press(getByTestId("start-button"));
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
   it("disables the start button while a run is in progress", async () => {
-    const { getByText, getByTestId } = await render(<RecordScreen />);
+    const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -86,7 +90,7 @@ describe("RecordScreen", () => {
   });
 
   it("opens the manual log from the secondary action", async () => {
-    const { getByTestId } = await render(<RecordScreen />);
+    const { getByTestId } = await renderScreen();
     await fireEvent.press(getByTestId("manual-button"));
     expect(router.push).toHaveBeenCalledWith("/session/new");
   });
@@ -94,7 +98,7 @@ describe("RecordScreen", () => {
   it("celebrates and navigates home after a successful save", async () => {
     mockCreateSession.mockResolvedValue({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<RecordScreen />);
+    const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -109,7 +113,7 @@ describe("RecordScreen", () => {
   });
 
   it("keeps the run alive across re-renders (tab switches)", async () => {
-    const { getByText, getByTestId, rerender } = await render(<RecordScreen />);
+    const { getByText, getByTestId, rerender } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));
@@ -121,7 +125,7 @@ describe("RecordScreen", () => {
     const before = getByTestId("elapsed").props.children;
 
     await act(async () => {
-      rerender(<RecordScreen />);
+      rerender(<ToastProvider><RecordScreen /></ToastProvider>);
     });
     await act(async () => {
       jest.advanceTimersByTime(30_000);
@@ -133,7 +137,7 @@ describe("RecordScreen", () => {
     mockCreateSession.mockRejectedValueOnce(new Error("boom"));
     mockCreateSession.mockResolvedValueOnce({ id: 9 });
 
-    const { getByText, getByTestId } = await render(<RecordScreen />);
+    const { getByText, getByTestId } = await renderScreen();
     await waitFor(() => expect(getByText("Math")).toBeTruthy());
 
     await fireEvent.press(getByText("Math"));

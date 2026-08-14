@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { CalendarDays, Timer, PencilLine } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { TextInput, Text } from "react-native-paper";
 import { useAuth } from "../auth/AuthContext";
 import { listSubjects, Subject } from "../api/subjects";
 import { createSession, getSession, updateSession } from "../api/sessions";
@@ -10,7 +9,12 @@ import { Button } from "../components/Button";
 import { Chip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { subjectLabel } from "../constants/subjectIcons";
-import { colors } from "../theme/colors";
+import { GroupedInput, GroupedInputItem } from "../components/ui/input";
+import { ScrollView } from "../components/ui/scroll-view";
+import { Skeleton } from "../components/ui/skeleton";
+import { Text } from "../components/ui/text";
+import { View } from "../components/ui/view";
+import { useColor } from "../hooks/useColor";
 import { appFonts } from "../theme/fonts";
 import { fontSize, spacing } from "../theme/tokens";
 import { localISO, todayDate } from "../utils/time";
@@ -22,6 +26,7 @@ export function NewSessionScreen() {
   const isEdit = Boolean(id);
   const { token } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [date, setDate] = useState(todayDate());
   const [minutes, setMinutes] = useState("30");
@@ -29,11 +34,16 @@ export function NewSessionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const mutedColor = useColor("textMuted");
+  const iconColor = useColor("icon");
+  const dangerColor = useColor("error");
+
   useEffect(() => {
     if (!token) return;
     listSubjects(token)
       .then(setSubjects)
-      .catch(() => setError("Could not load subjects."));
+      .catch(() => setError("Could not load subjects."))
+      .finally(() => setLoadingSubjects(false));
 
     if (isEdit && id) {
       getSession(token, Number(id))
@@ -95,20 +105,28 @@ export function NewSessionScreen() {
 
   return (
     <Screen title={isEdit ? "Edit session" : "Log a session"}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: dangerColor }]}>{error}</Text> : null}
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.fieldLabel}>Subject</Text>
-        <View style={styles.subjectRow}>
-          {subjects.map((s) => (
-            <Chip
-              key={s.id}
-              label={subjectLabel(s.name)}
-              selected={subjectId === s.id}
-              onPress={() => setSubjectId(s.id)}
-            />
-          ))}
-        </View>
-        <Text style={styles.fieldLabel}>Duration</Text>
+        <Text style={[styles.fieldLabel, { color: iconColor }]}>Subject</Text>
+        {loadingSubjects ? (
+          <View style={styles.subjectRow}>
+            <Skeleton width={90} height={40} variant="rounded" />
+            <Skeleton width={90} height={40} variant="rounded" />
+            <Skeleton width={90} height={40} variant="rounded" />
+          </View>
+        ) : (
+          <View style={styles.subjectRow}>
+            {subjects.map((s) => (
+              <Chip
+                key={s.id}
+                label={subjectLabel(s.name)}
+                selected={subjectId === s.id}
+                onPress={() => setSubjectId(s.id)}
+              />
+            ))}
+          </View>
+        )}
+        <Text style={[styles.fieldLabel, { color: iconColor }]}>Duration</Text>
         <View style={styles.subjectRow}>
           {QUICK_MINUTES.map((m) => (
             <Chip
@@ -119,43 +137,35 @@ export function NewSessionScreen() {
             />
           ))}
         </View>
-        <TextInput
-          mode="outlined"
-          placeholder="Date (YYYY-MM-DD)"
-          placeholderTextColor={colors.textMuted}
-          value={date}
-          onChangeText={setDate}
-          left={
-            <TextInput.Icon
-              icon={({ size, color }) => <CalendarDays size={size} strokeWidth={2.2} color={color} />}
-            />
-          }
-        />
-        <TextInput
-          mode="outlined"
-          placeholder="Minutes"
-          placeholderTextColor={colors.textMuted}
-          value={minutes}
-          onChangeText={setMinutes}
-          keyboardType="number-pad"
-          left={
-            <TextInput.Icon
-              icon={({ size, color }) => <Timer size={size} strokeWidth={2.2} color={color} />}
-            />
-          }
-        />
-        <TextInput
-          mode="outlined"
-          placeholder="Note (optional)"
-          placeholderTextColor={colors.textMuted}
-          value={note}
-          onChangeText={setNote}
-          left={
-            <TextInput.Icon
-              icon={({ size, color }) => <PencilLine size={size} strokeWidth={2.2} color={color} />}
-            />
-          }
-        />
+
+        <GroupedInput title="Details">
+          <GroupedInputItem
+            icon={CalendarDays}
+            label="Date"
+            placeholder="Date (YYYY-MM-DD)"
+            placeholderTextColor={mutedColor}
+            value={date}
+            onChangeText={setDate}
+          />
+          <GroupedInputItem
+            icon={Timer}
+            label="Minutes"
+            placeholder="Minutes"
+            placeholderTextColor={mutedColor}
+            value={minutes}
+            onChangeText={setMinutes}
+            keyboardType="number-pad"
+          />
+          <GroupedInputItem
+            icon={PencilLine}
+            label="Note"
+            placeholder="Note (optional)"
+            placeholderTextColor={mutedColor}
+            value={note}
+            onChangeText={setNote}
+          />
+        </GroupedInput>
+
         <Button
           title="Save session"
           onPress={onSave}
@@ -173,11 +183,10 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: fontSize.caption,
     fontFamily: appFonts.bold,
-    color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginTop: spacing.sm,
   },
   subjectRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  error: { color: colors.danger, fontSize: fontSize.body },
+  error: { fontSize: fontSize.body },
 });
